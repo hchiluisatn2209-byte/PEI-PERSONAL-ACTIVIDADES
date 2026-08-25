@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="PYL System — Planificación y Logística Telconet">
+  <title>PYL System — Telconet</title>
+
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect width='24' height='24' rx='6' fill='%230F1923'/><polyline points='22,12 18,12 15,21 9,3 6,12 2,12' fill='none' stroke='%2300A8E8' stroke-width='2.5'/></svg>">
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="css/main.css">
+
+  <style>
+    #appShell .app-shell { display: grid; }
+  </style>
+</head>
+<body>
+
+  <!-- ── Login ──────────────────────────────────────────── -->
+  <div id="loginContainer"></div>
+
+  <!-- ── App Shell (oculto hasta autenticación) ─────────── -->
+  <div id="appShell" class="hidden">
+    <div class="app-shell">
+      <!-- Sidebar, Header y Main se inyectan aquí por JS -->
+    </div>
+  </div>
+
+  <!-- ── Modal ──────────────────────────────────────────── -->
+  <div class="modal-overlay" id="modalOverlay" onclick="handleModalClick(event)">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitleEl">
+      <div class="modal-header">
+        <div class="modal-title" id="modalTitleEl">Nueva Asignación Semanal</div>
+        <button class="btn btn-ghost btn-icon btn-sm" onclick="closeModal()" aria-label="Cerrar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               style="width:16px;height:16px;">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body" id="modalBody"></div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+        <button class="btn btn-primary"
+                onclick="closeModal();showToast('Asignación guardada','success')">
+          Guardar asignación
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Toast container ────────────────────────────────── -->
+  <div class="toast-container hidden" id="toastContainer"></div>
+
+  <!-- ══════════════════════════════════════════════════════
+       SUPABASE CLIENT — CDN oficial
+  ══════════════════════════════════════════════════════ -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- ── Scripts de la app ──────────────────────────────── -->
+  <script src="js/data.js"></script>
+  <script src="js/app.js"></script>
+
+  <!-- ══════════════════════════════════════════════════════
+       BLOQUE DE INTEGRACIÓN SUPABASE + GOOGLE OAUTH
+       Reemplaza el bloque <script> comentado del index.html
+  ══════════════════════════════════════════════════════ -->
+  <script>
+    // ── Configuración ───────────────────────────────────
+    const SUPABASE_URL    = 'https://uulyksqyhxnxeaojgejv.supabase.co';
+    const SUPABASE_ANON   = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1bHlrc3F5aHhueGVhb2pnZWp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc1OTI0NjgsImV4cCI6MjEwMzE2ODQ2OH0.Pd6JWavjsSER0U08SK7oXgMlnH13Qd7wvpjmKB-nrSc';
+
+    // Dominios corporativos permitidos (múltiples dominios como configuraste)
+    const ALLOWED_DOMAINS = ['telconet.ec'];
+
+    // ── Inicializar cliente Supabase ────────────────────
+    const { createClient } = supabase;
+    const supabaseClient   = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+    // ── Login con Google OAuth ──────────────────────────
+    async function doLogin() {
+      try {
+        const { error } = await supabaseClient.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            // redirectTo: URL a la que Google regresa después del login
+            // En producción: tu dominio de GitHub Pages
+            // En desarrollo: localhost
+            redirectTo: window.location.origin + window.location.pathname,
+
+            queryParams: {
+              // hd restringe el selector de cuentas al dominio indicado
+              // Si tienes múltiples dominios, omite hd y valida abajo
+              hd: ALLOWED_DOMAINS[0],
+              prompt: 'select_account',
+              access_type: 'offline',
+            }
+          }
+        });
+
+        if (error) {
+          console.error('OAuth error:', error);
+          showToast('Error al conectar con Google. Intenta de nuevo.', 'error');
+        }
+        // Si no hay error, Google redirige automáticamente
+      } catch (err) {
+        console.error('Login error:', err);
+        showToast('Error inesperado. Intenta de nuevo.', 'error');
+      }
+    }
+
+    // ── Validar dominio del email ───────────────────────
+    function isDomainAllowed(email) {
+      if (!email) return false;
+      const domain = email.split('@')[1]?.toLowerCase();
+      return ALLOWED_DOMAINS.includes(domain);
+    }
+
+    // ── Cargar la app con datos del usuario ─────────────
+    function bootApp(session) {
+      const user  = session.user;
+      const email = user.email;
+      const name  = user.user_metadata?.full_name || email;
+      const avatar= user.user_metadata?.avatar_url || null;
+
+      // Extraer iniciales para el avatar sidebar
+      const parts    = name.trim().split(' ');
+      const initials = parts.length >= 2
+        ? parts[0][0] + parts[parts.length - 1][0]
+        : name.slice(0, 2);
+
+      // Inyectar datos reales del usuario en la UI
+      window.CURRENT_USER = {
+        id:       user.id,
+        email:    email,
+        name:     name,
+        initials: initials.toUpperCase(),
+        avatar:   avatar,
+        role:     'coordinador', // TODO: leer de rrhh.colaboradores según email
+      };
+
+      // Mostrar la app
+      document.getElementById('loginContainer').classList.add('hidden');
+      document.getElementById('appShell').classList.remove('hidden');
+      document.getElementById('toastContainer').classList.remove('hidden');
+
+      render();
+      showToast(`Bienvenida, ${name.split(' ')[0]}`, 'success');
+    }
+
+    // ── Cerrar sesión ───────────────────────────────────
+    async function doLogout() {
+      await supabaseClient.auth.signOut();
+      window.location.reload();
+    }
+
+    // ── Listener de sesión (el más importante) ──────────
+    // Se dispara en 3 casos:
+    //   1. Al cargar la página si hay sesión activa (cookie)
+    //   2. Cuando Google redirige de vuelta tras el login
+    //   3. Cuando expira la sesión
+    supabaseClient.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth event:', event);
+
+      if (event === 'SIGNED_IN' && session) {
+        const email = session.user.email;
+
+        // Validar dominio corporativo
+        if (!isDomainAllowed(email)) {
+          await supabaseClient.auth.signOut();
+          document.getElementById('loginContainer').innerHTML = `
+            <div style="
+              min-height:100vh;display:flex;align-items:center;
+              justify-content:center;background:#0F1923;
+            ">
+              <div style="
+                background:#1A2B3C;border-radius:16px;padding:40px;
+                max-width:400px;text-align:center;
+              ">
+                <div style="font-size:48px;margin-bottom:16px;">⛔</div>
+                <div style="color:#fff;font-size:18px;font-weight:700;margin-bottom:8px;">
+                  Acceso no autorizado
+                </div>
+                <div style="color:rgba(255,255,255,.5);font-size:14px;margin-bottom:24px;">
+                  La cuenta <strong style="color:#fff;">${email}</strong>
+                  no pertenece a un dominio corporativo autorizado.
+                </div>
+                <button onclick="window.location.reload()"
+                  style="
+                    background:#00A8E8;color:#fff;border:none;
+                    padding:10px 24px;border-radius:8px;
+                    font-size:14px;font-weight:600;cursor:pointer;
+                  ">
+                  Intentar con otra cuenta
+                </button>
+              </div>
+            </div>`;
+          return;
+        }
+
+        bootApp(session);
+      }
+
+      if (event === 'SIGNED_OUT') {
+        // Recargar para mostrar el login
+        document.getElementById('loginContainer').classList.remove('hidden');
+        document.getElementById('appShell').classList.add('hidden');
+      }
+
+      if (event === 'TOKEN_REFRESHED') {
+        console.log('Token renovado automáticamente');
+      }
+    });
+
+    // ── Manejo de modal y teclas ────────────────────────
+    function handleModalClick(e) {
+      if (e.target === e.currentTarget) closeModal();
+    }
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') closeModal();
+    });
+
+    // ── Verificar sesión al cargar (para GitHub Pages) ──
+    // Necesario porque GitHub Pages no tiene servidor
+    // que maneje la cookie de sesión
+    (async () => {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (session) {
+        // Ya hay sesión activa, onAuthStateChange la manejará
+        console.log('Sesión existente encontrada');
+      } else {
+        // Sin sesión: mostrar login
+        document.getElementById('loginContainer').innerHTML = '';
+        // El renderLogin() de app.js se encarga en DOMContentLoaded
+      }
+    })();
+  </script>
+
+</body>
+</html>
