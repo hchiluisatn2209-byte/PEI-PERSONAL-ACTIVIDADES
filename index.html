@@ -90,13 +90,10 @@ const ALLOWED_DOMAINS = ['gmail.com', 'telconet.ec'];
             // En desarrollo: localhost
             redirectTo: window.location.origin + window.location.pathname,
 
-            queryParams: {
-              // hd restringe el selector de cuentas al dominio indicado
-              // Si tienes múltiples dominios, omite hd y valida abajo
-              hd: ALLOWED_DOMAINS[0],
-              prompt: 'select_account',
-              access_type: 'offline',
-            }
+queryParams: {
+  prompt: 'select_account',
+  access_type: 'offline',
+}
           }
         });
 
