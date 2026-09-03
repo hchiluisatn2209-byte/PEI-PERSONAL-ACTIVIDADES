@@ -1941,57 +1941,186 @@ function renderPlanning() {
   </div>`;
 }
 
-// ── Personal ──────────────────────────────────────────────
-function renderPersonal() {
-  const cards = PYL.colaboradores.map(c => {
-    const b = PYL.getDisponibilidadBadge(c.disponibilidad);
-    return `
-      <div class="personal-card">
-        <div class="personal-card-header">
-          ${initBadge(c.iniciales, c.ciudad, 'lg')}
-          <div class="personal-card-info">
-            <div class="personal-name">${c.nombre}</div>
-            <div class="personal-cargo">${c.cargo}</div>
-          </div>
-          <span class="badge ${b.cls}">${b.label}</span>
-        </div>
-        <div class="personal-card-details">
-          <div class="personal-detail">
-            ${ICONS.ts}
-            <span>${c.ciudad === 'UIO' ? 'Quito' : c.ciudad === 'GYE' ? 'Guayaquil' : 'Milagro'}</span>
-          </div>
-          <div class="personal-detail">
-            ${ICONS.clientes}
-            <span>${c.clientes.length ? c.clientes.join(', ') : 'Sin clientes asignados'}</span>
-          </div>
-          ${c.ts ? `
-          <div class="personal-detail">
-            ${ICONS.ts}
-            <span style="color:var(--accent);">${c.ts}</span>
-          </div>` : ''}
-        </div>
-        <div class="personal-card-footer">
-          <div class="backup-pair">
-            ${c.backup1 ? `<span class="backup-badge">BK1: ${c.backup1}</span>` : ''}
-            ${c.backup2 ? `<span class="backup-badge">BK2: ${c.backup2}</span>` : ''}
-          </div>
-          <span style="font-size:var(--text-xs);color:var(--text-muted);
-                       font-family:var(--font-mono);">${c.grupo}</span>
-        </div>
-      </div>`;
-  }).join('');
+// ── Personal — conectado a Supabase ─────────────────────────
+async function cargarColaboradoresSupabase() {
+  try {
+    const { data, error } = await supabaseClient
+      .schema('rrhh')
+      .from('colaboradores')
+      .select(`
+        id, codigo_empleado, username, nombres, apellidos,
+        nombre_display, iniciales, correo_corporativo,
+        gmail_empresa, celular, estado_laboral, activo,
+        cargo:cargos(nombre),
+        ciudad:ciudades(codigo, nombre),
+        disponibilidad:disponibilidades(tipo, fecha_inicio, fecha_fin)
+      `)
+      .eq('activo', true)
+      .order('apellidos');
+
+    if (error) throw error;
+    return data || [];
+  } catch (err) {
+    console.error('Error cargando colaboradores:', err);
+    return [];
+  }
+}
+
+function renderPersonalCard(c) {
+  // Obtener disponibilidad actual (la más reciente activa)
+  const hoy = new Date().toISOString().split('T')[0];
+  const dispActiva = (c.disponibilidad || []).find(d =>
+    d.fecha_inicio <= hoy && (!d.fecha_fin || d.fecha_fin >= hoy)
+  );
+  const dispTipo = dispActiva ? dispActiva.tipo : 'operativo';
+  const b = PYL.getDisponibilidadBadge(dispTipo);
+
+  const ciudad     = c.ciudad?.codigo || '';
+  const ciudadNom  = c.ciudad?.nombre || '';
+  const cargoNom   = c.cargo?.nombre  || '';
+  const iniciales  = c.iniciales || (c.apellidos || '').substring(0,2).toUpperCase();
+  const cityClass  = PYL.getCityClass(ciudad);
 
   return `
-  <div class="section-header">
-    <div>
-      <div class="section-title">Equipo PYL</div>
-      <div class="section-desc">${PYL.colaboradores.length} colaboradores registrados</div>
+    <div class="personal-card" onclick="verDetalleColaborador('${c.id}')">
+      <div class="personal-card-header">
+        <div class="initials-badge ${cityClass} sz-lg"
+             data-tooltip="${iniciales}">${iniciales}</div>
+        <div class="personal-card-info">
+          <div class="personal-name">${c.nombre_display || c.apellidos + ' ' + c.nombres}</div>
+          <div class="personal-cargo">${cargoNom}</div>
+        </div>
+        <span class="badge ${b.cls}">${b.label}</span>
+      </div>
+      <div class="personal-card-details">
+        <div class="personal-detail">
+          ${ICONS.ts}
+          <span>${ciudadNom || ciudad}</span>
+        </div>
+        <div class="personal-detail">
+          ${ICONS.personal}
+          <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);">
+            @${c.username || '—'}
+          </span>
+        </div>
+        ${c.celular ? `
+        <div class="personal-detail">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               style="width:12px;height:12px;opacity:.6;">
+            <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.8 19.79 19.79 0 01.22 1.18 2 2 0 012.22 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/>
+          </svg>
+          <span>${c.celular}</span>
+        </div>` : ''}
+        ${c.gmail_empresa ? `
+        <div class="personal-detail">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               style="width:12px;height:12px;opacity:.6;">
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+            <polyline points="22,6 12,13 2,6"/>
+          </svg>
+          <span style="font-size:10px;overflow:hidden;text-overflow:ellipsis;
+                       white-space:nowrap;max-width:160px;">${c.gmail_empresa}</span>
+        </div>` : ''}
+      </div>
+      <div class="personal-card-footer">
+        <span class="badge badge-neutral" style="font-size:10px;">
+          ${c.codigo_empleado || 'S/C'}
+        </span>
+        ${dispActiva && dispTipo !== 'operativo' ? `
+        <span style="font-size:10px;color:var(--state-mat);">
+          Hasta: ${dispActiva.fecha_fin ? new Date(dispActiva.fecha_fin+'T00:00:00').toLocaleDateString('es-EC',{day:'2-digit',month:'short'}) : 'Indefinido'}
+        </span>` : ''}
+      </div>
+    </div>`;
+}
+
+function verDetalleColaborador(id) {
+  const c = (window._colaboradoresCache || []).find(x => x.id === id);
+  if (!c) return;
+  const overlay = document.getElementById('modalOverlay');
+  const title   = document.getElementById('modalTitleEl');
+  const body    = document.getElementById('modalBody');
+  title.textContent = c.nombre_display || c.apellidos + ' ' + c.nombres;
+  body.innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:var(--sp-3);">
+      <div class="form-row">
+        <div><span class="form-label">Username</span><div style="font-family:var(--font-mono);font-size:13px;">@${c.username||'—'}</div></div>
+        <div><span class="form-label">Código</span><div style="font-family:var(--font-mono);font-size:13px;">${c.codigo_empleado||'—'}</div></div>
+      </div>
+      <div><span class="form-label">Correo corporativo</span><div style="font-size:13px;">${c.correo_corporativo||'—'}</div></div>
+      <div><span class="form-label">Gmail empresa</span><div style="font-size:13px;">${c.gmail_empresa||'—'}</div></div>
+      <div class="form-row">
+        <div><span class="form-label">Celular</span><div style="font-size:13px;">${c.celular||'—'}</div></div>
+        <div><span class="form-label">Ciudad</span><div style="font-size:13px;">${c.ciudad?.nombre||'—'}</div></div>
+      </div>
+      <div class="form-row">
+        <div><span class="form-label">Cargo</span><div style="font-size:13px;">${c.cargo?.nombre||'—'}</div></div>
+        <div><span class="form-label">Estado</span><div style="font-size:13px;">${c.estado_laboral||'—'}</div></div>
+      </div>
+    </div>`;
+  overlay.classList.add('open');
+  // Restaurar footer normal
+  document.querySelector('.modal-footer').innerHTML = `
+    <button class="btn btn-secondary" onclick="closeModal()">Cerrar</button>`;
+}
+
+async function renderPersonal() {
+  // Mostrar loading
+  const main = document.getElementById('appMain');
+  main.innerHTML = `
+    <div class="section-header">
+      <div>
+        <div class="section-title">Equipo PYL</div>
+        <div class="section-desc">Cargando datos...</div>
+      </div>
     </div>
-    <button class="btn btn-primary btn-sm">
-      ${ICONS.plus} Nuevo colaborador
-    </button>
-  </div>
-  <div class="personal-grid">${cards}</div>`;
+    <div style="display:flex;align-items:center;justify-content:center;
+                padding:60px;color:var(--text-muted);">
+      <div style="text-align:center;">
+        <div style="font-size:32px;margin-bottom:12px;animation:spin 1s linear infinite;">⟳</div>
+        <div>Cargando equipo desde Supabase...</div>
+      </div>
+    </div>`;
+
+  // Agregar animación spin
+  if (!document.getElementById('spinStyle')) {
+    const s = document.createElement('style');
+    s.id = 'spinStyle';
+    s.textContent = '@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}';
+    document.head.appendChild(s);
+  }
+
+  // Cargar desde Supabase
+  const colaboradores = await cargarColaboradoresSupabase();
+  window._colaboradoresCache = colaboradores;
+
+  const total = colaboradores.length;
+  const operativos = colaboradores.filter(c => {
+    const hoy = new Date().toISOString().split('T')[0];
+    const dispActiva = (c.disponibilidad || []).find(d =>
+      d.fecha_inicio <= hoy && (!d.fecha_fin || d.fecha_fin >= hoy)
+    );
+    return !dispActiva || dispActiva.tipo === 'operativo';
+  }).length;
+
+  const cards = colaboradores.map(renderPersonalCard).join('');
+
+  main.innerHTML = `
+    <div class="section-header">
+      <div>
+        <div class="section-title">Equipo PYL</div>
+        <div class="section-desc">
+          ${total} colaboradores · ${operativos} operativos
+          <span style="color:var(--state-op);font-weight:600;"> ✓ datos en tiempo real</span>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-sm">
+        ${ICONS.plus} Nuevo colaborador
+      </button>
+    </div>
+    <div class="personal-grid">${cards || '<div class="empty"><div class="empty-title">Sin datos</div></div>'}</div>`;
+
+  return ''; // renderModule ya inyectó el contenido
 }
 
 // ── Turnos ────────────────────────────────────────────────
@@ -2215,7 +2344,7 @@ function renderMotivos() {
 
 // ── Acuerdos ──────────────────────────────────────────────
 // ── Configuración grupo WhatsApp ─────────────────────────
-const WA_GRUPO_LINK = 'https://chat.whatsapp.com/IUKhMHk8HMm6jBKPUUYx94';
+const WA_GRUPO_LINK = 'https://chat.whatsapp.com/DzihMjwnTgQ6lrV8w54PJ9';
 
 function compartirWhatsApp(tipo, titulo, descripcion, fecha, prioridad) {
   const autor = window.CURRENT_USER?.name || 'Equipo PYL';
@@ -2281,9 +2410,10 @@ function mostrarModalWhatsApp(encoded, tipo, titulo) {
       ">
         <div style="font-size:12px;color:#166534;line-height:1.6;">
           <strong>¿Cómo funciona?</strong><br>
-          1. Clic en <strong>"Abrir grupo"</strong><br>
-          2. WhatsApp abre directamente el grupo del equipo<br>
-          3. El mensaje ya está escrito — solo toca <strong>Enviar ▶</strong>
+          1. Clic en <strong>"Copiar y abrir grupo"</strong><br>
+          2. El mensaje se copia automáticamente 📋<br>
+          3. WhatsApp abre el grupo del equipo PYL<br>
+          4. Pega con <strong>Ctrl+V</strong> y toca <strong>Enviar ▶</strong>
         </div>
       </div>
 
@@ -2306,7 +2436,7 @@ function mostrarModalWhatsApp(encoded, tipo, titulo) {
           <svg viewBox="0 0 24 24" fill="white" style="width:16px;height:16px;">
             <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
           </svg>
-          Abrir grupo y enviar
+          📋 Copiar y abrir grupo
         </button>
       </div>
     </div>
@@ -2320,19 +2450,67 @@ function mostrarModalWhatsApp(encoded, tipo, titulo) {
   });
 }
 
-function abrirGrupoWhatsApp(encoded) {
-  // Primero abre el grupo
-  window.open(WA_GRUPO_LINK, '_blank');
+async function abrirGrupoWhatsApp(encoded) {
+  // 1. Decodificar y copiar el mensaje al portapapeles
+  const texto = decodeURIComponent(encoded);
 
-  // Luego (con delay) abre WhatsApp con el mensaje listo
-  // El usuario estará en el grupo y podrá pegar/enviar
-  setTimeout(() => {
-    const waUrl = `https://api.whatsapp.com/send?text=${encoded}`;
-    window.open(waUrl, '_blank');
-  }, 1500);
+  try {
+    await navigator.clipboard.writeText(texto);
+    copiadoExitoso();
+  } catch(e) {
+    // Fallback para navegadores sin permiso de clipboard
+    const ta = document.createElement('textarea');
+    ta.value = texto;
+    ta.style.cssText = 'position:fixed;opacity:0;top:0;left:0;';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    document.execCommand('copy');
+    ta.remove();
+    copiadoExitoso();
+  }
+}
 
+function copiadoExitoso() {
   document.getElementById('waOverlay')?.remove();
-  showToast('WhatsApp abierto — toca Enviar en el grupo ▶', 'success');
+
+  // Mostrar instrucción antes de abrir el grupo
+  const toast = document.createElement('div');
+  toast.style.cssText = `
+    position:fixed;bottom:90px;right:24px;z-index:400;
+    background:#25D366;color:#fff;
+    padding:16px 20px;border-radius:12px;
+    box-shadow:0 8px 24px rgba(0,0,0,.2);
+    font-size:13px;font-weight:600;
+    max-width:300px;line-height:1.6;
+    animation:toastIn .2s ease;
+  `;
+  toast.innerHTML = `
+    <div style="display:flex;align-items:flex-start;gap:10px;">
+      <span style="font-size:20px;flex-shrink:0;">📋</span>
+      <div>
+        <div style="font-size:14px;margin-bottom:4px;">¡Mensaje copiado!</div>
+        <div style="font-weight:400;opacity:.9;">
+          El grupo se abrirá ahora.<br>
+          <strong>Pega el mensaje (Ctrl+V)</strong><br>
+          y toca ▶ Enviar
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(toast);
+
+  // Abrir el grupo después de 800ms para que el usuario lea la instrucción
+  setTimeout(() => {
+    window.open(WA_GRUPO_LINK, '_blank');
+  }, 800);
+
+  // Quitar el toast después de 5 segundos
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transition = 'opacity .3s';
+    setTimeout(() => toast.remove(), 300);
+  }, 5000);
 }
 
 function renderAcuerdos() {
@@ -2612,14 +2790,22 @@ function renderModule() {
   const renders = {
     dashboard: renderDashboard,
     planning:  renderPlanning,
-    personal:  renderPersonal,
+    personal:  renderPersonal,  // async — maneja su propio innerHTML
     turnos:    renderTurnos,
     clientes:  renderClientes,
     ts:        renderTS,
     motivos:   renderMotivos,
     acuerdos:  renderAcuerdos,
   };
-  main.innerHTML = (renders[App.modulo] || renderDashboard)();
+
+  const fn = renders[App.modulo] || renderDashboard;
+  // Si es async (personal, etc.) lo ejecutamos y no sobreescribimos
+  if (App.modulo === 'personal') {
+    main.innerHTML = '';
+    fn();  // maneja su propio innerHTML
+  } else {
+    main.innerHTML = fn();
+  }
 }
 
 function render() {
