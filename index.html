@@ -2214,29 +2214,69 @@ function renderMotivos() {
 }
 
 // ── Acuerdos ──────────────────────────────────────────────
+function compartirWhatsApp(tipo, titulo, descripcion, fecha, prioridad) {
+  const autor = window.CURRENT_USER?.name || 'Equipo PYL';
+  const emoji = {
+    'Directriz':     '📋',
+    'Acuerdo':       '✅',
+    'Procedimiento': '📌',
+    'Comunicado':    '📢',
+  }[tipo] || '📄';
+
+  const mensaje =
+    `${emoji} *${tipo.toUpperCase()} — PLANPEI*\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━━\n` +
+    `📌 *${titulo}*\n\n` +
+    `${descripcion}\n\n` +
+    `📅 Fecha: ${fecha}\n` +
+    `⚡ Prioridad: ${prioridad.toUpperCase()}\n` +
+    `👤 Publicado por: ${autor}\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━━\n` +
+    `_Sistema PLANPEI — Telconet_`;
+
+  const encoded = encodeURIComponent(mensaje);
+  const url = `https://wa.me/?text=${encoded}`;
+  window.open(url, '_blank');
+}
+
 function renderAcuerdos() {
   const acuerdos = [
-    { tipo:'Directriz', titulo:'Procedimiento de instalaciones - Tiempo máximo', descripcion:'Las instalaciones no pueden superar los 15 días autorizados por la GTN en estado FACTIBLE.', fecha:'2024-01-15', estado:'vigente', prioridad:'alta' },
-    { tipo:'Acuerdo',   titulo:'Gestión de permisos CC El Recreo',               descripcion:'Los permisos siempre se deben gestionar para las 07:00 am. No se puede programar fines de semana y feriados.', fecha:'2024-03-10', estado:'vigente', prioridad:'media' },
-    { tipo:'Procedimiento',titulo:'Rotación semanal de TS',                      descripcion:'Cada planificador rota la TS asignada semanalmente según la tabla de rotación publicada cada lunes.', fecha:'2024-06-01', estado:'vigente', prioridad:'alta' },
-    { tipo:'Comunicado', titulo:'Actualización de equipos PRODUBANCO',            descripcion:'Se incorporan los modelos Aruba 515 para las agencias. Verificar disponibilidad en bodega antes de programar.', fecha:'2024-11-20', estado:'vigente', prioridad:'media' },
+    { tipo:'Directriz',    titulo:'Procedimiento de instalaciones - Tiempo máximo', descripcion:'Las instalaciones no pueden superar los 15 días autorizados por la GTN en estado FACTIBLE. Pasado ese tiempo se debe anular y reingresar la OT.', fecha:'2024-01-15', estado:'vigente', prioridad:'alta' },
+    { tipo:'Acuerdo',      titulo:'Gestión de permisos CC El Recreo',               descripcion:'Los permisos siempre se deben gestionar para las 07:00 am. No se puede programar fines de semana y feriados. Confirmar con Cristhian Garzón antes de las 14:00.', fecha:'2024-03-10', estado:'vigente', prioridad:'media' },
+    { tipo:'Procedimiento',titulo:'Rotación semanal de TS',                         descripcion:'Cada planificador rota la TS asignada semanalmente según la tabla de rotación publicada cada lunes. El cambio aplica desde el primer día hábil de la semana.', fecha:'2024-06-01', estado:'vigente', prioridad:'alta' },
+    { tipo:'Comunicado',   titulo:'Actualización de equipos PRODUBANCO',             descripcion:'Se incorporan los modelos Aruba 515 para las agencias. Verificar disponibilidad en bodega antes de programar instalación.', fecha:'2024-11-20', estado:'vigente', prioridad:'media' },
   ];
 
-  const tipoBadge = { Directriz:'badge-det', Acuerdo:'badge-op', Procedimiento:'badge-mat', Comunicado:'badge-neutral' };
+  const tipoBadge    = { Directriz:'badge-det', Acuerdo:'badge-op', Procedimiento:'badge-mat', Comunicado:'badge-neutral' };
+  const prioColor    = { alta:'var(--state-det)', media:'var(--state-mat)', baja:'var(--state-op)' };
+  const whatsappIcon = `<svg viewBox="0 0 24 24" fill="currentColor" style="width:15px;height:15px;flex-shrink:0;">
+    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+  </svg>`;
+
   const cards = acuerdos.map(a => `
-    <div class="card mb-4">
+    <div class="card mb-4" style="border-left:3px solid ${prioColor[a.prioridad]};">
       <div class="card-header">
         <span class="badge ${tipoBadge[a.tipo]}">${a.tipo}</span>
         <div style="flex:1;margin-left:var(--sp-3);">
-          <div style="font-weight:700;">${a.titulo}</div>
+          <div style="font-weight:700;font-size:var(--text-sm);">${a.titulo}</div>
+          <div style="font-size:var(--text-xs);color:var(--text-muted);margin-top:2px;">
+            Fecha: ${PYL.formatDate(a.fecha)} · Prioridad:
+            <span style="color:${prioColor[a.prioridad]};font-weight:600;">${a.prioridad.toUpperCase()}</span>
+          </div>
         </div>
-        <span class="badge badge-op" style="margin-left:auto;">Vigente</span>
+        <div style="display:flex;align-items:center;gap:var(--sp-2);margin-left:var(--sp-3);">
+          <span class="badge badge-op">Vigente</span>
+          <button class="btn btn-sm"
+            style="background:#25D366;color:#fff;display:flex;align-items:center;gap:6px;border-radius:var(--r-md);"
+            onclick="compartirWhatsApp('${a.tipo}','${a.titulo.replace(/'/g,"\'")}','${a.descripcion.replace(/'/g,"\'")}','${PYL.formatDate(a.fecha)}','${a.prioridad}')"
+            title="Compartir por WhatsApp">
+            ${whatsappIcon}
+            WhatsApp
+          </button>
+        </div>
       </div>
       <div class="card-body">
         <p style="font-size:var(--text-sm);color:var(--text-secondary);line-height:1.6;">${a.descripcion}</p>
-        <div style="margin-top:var(--sp-3);font-size:var(--text-xs);color:var(--text-muted);">
-          Fecha: ${PYL.formatDate(a.fecha)} · Prioridad: ${a.prioridad}
-        </div>
       </div>
     </div>
   `).join('');
@@ -2245,11 +2285,103 @@ function renderAcuerdos() {
   <div class="section-header">
     <div>
       <div class="section-title">Acuerdos y Directrices</div>
-      <div class="section-desc">Procedimientos operativos vigentes del equipo</div>
+      <div class="section-desc">Procedimientos operativos vigentes del equipo · Comparte directo a WhatsApp</div>
     </div>
-    <button class="btn btn-primary btn-sm">${ICONS.plus} Nuevo acuerdo</button>
+    <button class="btn btn-primary btn-sm" onclick="openModalNuevoAcuerdo()">
+      ${ICONS.plus} Nuevo acuerdo
+    </button>
   </div>
   ${cards}`;
+}
+
+// ── Modal Nuevo Acuerdo ───────────────────────────────────
+function openModalNuevoAcuerdo() {
+  const overlay = document.getElementById('modalOverlay');
+  const title   = document.getElementById('modalTitleEl');
+  const body    = document.getElementById('modalBody');
+
+  title.textContent = 'Nuevo Acuerdo / Directriz';
+
+  body.innerHTML = `
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Tipo</label>
+        <select class="form-select" id="nuevoTipo">
+          <option>Acuerdo</option>
+          <option>Directriz</option>
+          <option>Procedimiento</option>
+          <option>Comunicado</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Prioridad</label>
+        <select class="form-select" id="nuevaPrioridad">
+          <option value="alta">Alta</option>
+          <option value="media" selected>Media</option>
+          <option value="baja">Baja</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Título</label>
+      <input type="text" class="form-input" id="nuevoTitulo"
+             placeholder="Ej: Procedimiento de instalaciones en CC...">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Descripción</label>
+      <textarea class="form-textarea" id="nuevoDesc" style="min-height:120px;"
+                placeholder="Detalla el acuerdo o directriz..."></textarea>
+    </div>
+    <div style="background:#F0FFF4;border:1px solid #25D366;border-radius:var(--r-md);
+                padding:var(--sp-3) var(--sp-4);display:flex;align-items:center;gap:var(--sp-3);">
+      <svg viewBox="0 0 24 24" fill="#25D366" style="width:20px;height:20px;flex-shrink:0;">
+        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+      </svg>
+      <div style="font-size:var(--text-xs);color:#166534;line-height:1.5;">
+        Al guardar, podrás compartir este acuerdo directamente a cualquier grupo de WhatsApp
+        con un clic desde la tarjeta.
+      </div>
+    </div>`;
+
+  overlay.classList.add('open');
+
+  // Sobreescribir botón guardar para también ofrecer compartir
+  const footer = document.querySelector('.modal-footer');
+  footer.innerHTML = `
+    <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+    <button class="btn btn-sm"
+      style="background:#25D366;color:#fff;display:flex;align-items:center;gap:6px;"
+      onclick="guardarYCompartirWhatsApp()">
+      <svg viewBox="0 0 24 24" fill="currentColor" style="width:14px;height:14px;">
+        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+      </svg>
+      Guardar y enviar por WhatsApp
+    </button>
+    <button class="btn btn-primary" onclick="guardarAcuerdo()">
+      Guardar
+    </button>`;
+}
+
+function guardarAcuerdo() {
+  closeModal();
+  showToast('Acuerdo guardado correctamente', 'success');
+}
+
+function guardarYCompartirWhatsApp() {
+  const tipo      = document.getElementById('nuevoTipo')?.value || 'Acuerdo';
+  const prioridad = document.getElementById('nuevaPrioridad')?.value || 'media';
+  const titulo    = document.getElementById('nuevoTitulo')?.value || '';
+  const desc      = document.getElementById('nuevoDesc')?.value || '';
+  const fecha     = new Date().toLocaleDateString('es-EC', { day:'2-digit', month:'short', year:'numeric' });
+
+  if (!titulo.trim() || !desc.trim()) {
+    showToast('Completa el título y la descripción', 'error');
+    return;
+  }
+
+  closeModal();
+  showToast('Acuerdo guardado', 'success');
+  setTimeout(() => compartirWhatsApp(tipo, titulo, desc, fecha, prioridad), 400);
 }
 
 // ── Modal ─────────────────────────────────────────────────
