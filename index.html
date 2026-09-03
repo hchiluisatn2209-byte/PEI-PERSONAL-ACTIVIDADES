@@ -1944,22 +1944,53 @@ function renderPlanning() {
 // ── Personal — conectado a Supabase ─────────────────────────
 async function cargarColaboradoresSupabase() {
   try {
-    const { data, error } = await supabaseClient
+    // Query 1: colaboradores con cargo y ciudad
+    const { data: colabs, error: e1 } = await supabaseClient
       .schema('rrhh')
       .from('colaboradores')
       .select(`
         id, codigo_empleado, username, nombres, apellidos,
         nombre_display, iniciales, correo_corporativo,
         gmail_empresa, celular, estado_laboral, activo,
-        cargo:cargos(nombre),
-        ciudad:ciudades(codigo, nombre),
-        disponibilidad:disponibilidades(tipo, fecha_inicio, fecha_fin)
+        cargo_id, ciudad_id
       `)
       .eq('activo', true)
       .order('apellidos');
 
-    if (error) throw error;
-    return data || [];
+    if (e1) throw e1;
+
+    // Query 2: ciudades
+    const { data: ciudades } = await supabaseClient
+      .schema('rrhh')
+      .from('ciudades')
+      .select('id, codigo, nombre');
+
+    // Query 3: cargos
+    const { data: cargos } = await supabaseClient
+      .schema('rrhh')
+      .from('cargos')
+      .select('id, nombre');
+
+    // Query 4: disponibilidades activas
+    const { data: disps } = await supabaseClient
+      .schema('rrhh')
+      .from('disponibilidades')
+      .select('colaborador_id, tipo, fecha_inicio, fecha_fin, activo')
+      .eq('activo', true);
+
+    // Guardar en caché global
+    window._disponibilidadesCache = disps || [];
+
+    // Enriquecer cada colaborador
+    const ciudadMap = Object.fromEntries((ciudades || []).map(c => [c.id, c]));
+    const cargoMap  = Object.fromEntries((cargos  || []).map(c => [c.id, c]));
+
+    return (colabs || []).map(c => ({
+      ...c,
+      ciudad: ciudadMap[c.ciudad_id] || null,
+      cargo:  cargoMap[c.cargo_id]   || null,
+    }));
+
   } catch (err) {
     console.error('Error cargando colaboradores:', err);
     return [];
@@ -1967,10 +1998,14 @@ async function cargarColaboradoresSupabase() {
 }
 
 function renderPersonalCard(c) {
-  // Obtener disponibilidad actual (la más reciente activa)
+  // Disponibilidad desde caché separado
   const hoy = new Date().toISOString().split('T')[0];
-  const dispActiva = (c.disponibilidad || []).find(d =>
-    d.fecha_inicio <= hoy && (!d.fecha_fin || d.fecha_fin >= hoy)
+  const disps = window._disponibilidadesCache || [];
+  const dispActiva = disps.find(d =>
+    d.colaborador_id === c.id &&
+    d.fecha_inicio <= hoy &&
+    (!d.fecha_fin || d.fecha_fin >= hoy) &&
+    d.activo
   );
   const dispTipo = dispActiva ? dispActiva.tipo : 'operativo';
   const b = PYL.getDisponibilidadBadge(dispTipo);
