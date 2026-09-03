@@ -1944,16 +1944,11 @@ function renderPlanning() {
 // ── Personal — conectado a Supabase ─────────────────────────
 async function cargarColaboradoresSupabase() {
   try {
-    // Query 1: colaboradores con cargo y ciudad
+    // Query 1: colaboradores (sin columnas generadas)
     const { data: colabs, error: e1 } = await supabaseClient
       .schema('rrhh')
       .from('colaboradores')
-      .select(`
-        id, codigo_empleado, username, nombres, apellidos,
-        nombre_display, iniciales, correo_corporativo,
-        gmail_empresa, celular, estado_laboral, activo,
-        cargo_id, ciudad_id
-      `)
+      .select('id, codigo_empleado, username, nombres, apellidos, iniciales, correo_corporativo, gmail_empresa, celular, estado_laboral, activo, cargo_id, ciudad_id')
       .eq('activo', true)
       .order('apellidos');
 
@@ -2015,6 +2010,8 @@ function renderPersonalCard(c) {
   const cargoNom   = c.cargo?.nombre  || '';
   const iniciales  = c.iniciales || (c.apellidos || '').substring(0,2).toUpperCase();
   const cityClass  = PYL.getCityClass(ciudad);
+  // Construir nombre completo manualmente (nombre_display es columna generada)
+  const nombreCompleto = ((c.apellidos || '') + ' ' + (c.nombres || '')).trim();
 
   return `
     <div class="personal-card" onclick="verDetalleColaborador('${c.id}')">
@@ -2022,7 +2019,7 @@ function renderPersonalCard(c) {
         <div class="initials-badge ${cityClass} sz-lg"
              data-tooltip="${iniciales}">${iniciales}</div>
         <div class="personal-card-info">
-          <div class="personal-name">${c.nombre_display || c.apellidos + ' ' + c.nombres}</div>
+          <div class="personal-name">${nombreCompleto}</div>
           <div class="personal-cargo">${cargoNom}</div>
         </div>
         <span class="badge ${b.cls}">${b.label}</span>
@@ -2075,7 +2072,7 @@ function verDetalleColaborador(id) {
   const overlay = document.getElementById('modalOverlay');
   const title   = document.getElementById('modalTitleEl');
   const body    = document.getElementById('modalBody');
-  title.textContent = c.nombre_display || c.apellidos + ' ' + c.nombres;
+  title.textContent = ((c.apellidos || '') + ' ' + (c.nombres || '')).trim();
   body.innerHTML = `
     <div style="display:flex;flex-direction:column;gap:var(--sp-3);">
       <div class="form-row">
@@ -2130,10 +2127,14 @@ async function renderPersonal() {
   window._colaboradoresCache = colaboradores;
 
   const total = colaboradores.length;
+  const hoyOp = new Date().toISOString().split('T')[0];
+  const dispsCache = window._disponibilidadesCache || [];
   const operativos = colaboradores.filter(c => {
-    const hoy = new Date().toISOString().split('T')[0];
-    const dispActiva = (c.disponibilidad || []).find(d =>
-      d.fecha_inicio <= hoy && (!d.fecha_fin || d.fecha_fin >= hoy)
+    const dispActiva = dispsCache.find(d =>
+      d.colaborador_id === c.id &&
+      d.fecha_inicio <= hoyOp &&
+      (!d.fecha_fin || d.fecha_fin >= hoyOp) &&
+      d.activo
     );
     return !dispActiva || dispActiva.tipo === 'operativo';
   }).length;
