@@ -1704,35 +1704,145 @@ async function renderTurnos() {
   let contenido = '';
 
   if (vistaActual === 'calendario') {
-    // Agrupar todos los turnos futuros por mes
-    const mesesMap = {};
-    turnos.filter(t => t.fecha_fin >= hoyStr).forEach(t => {
-      const k = t.fecha_inicio.substring(0,7);
-      if (!mesesMap[k]) mesesMap[k] = [];
-      mesesMap[k].push(t);
+    // ── Calendario mensual tipo grid ──────────────────────
+    const calMes  = mes;
+    const calAnio = anio;
+    const primerDia   = new Date(calAnio, calMes, 1);
+    const ultimoDia   = new Date(calAnio, calMes + 1, 0);
+    const diasEnMes   = ultimoDia.getDate();
+    // Lunes=0 para nuestra grilla (0=Lun...6=Dom)
+    let inicioOffset = primerDia.getDay() - 1;
+    if (inicioOffset < 0) inicioOffset = 6;
+
+    const DIAS_SEMANA = ['LUN','MAR','MIÉ','JUE','VIE','SÁB','DOM'];
+
+    // Índice: día del mes → turno
+    const turnosPorDia = {};
+    turnos.forEach(t => {
+      const [ty, tm, td] = t.fecha_inicio.split('-').map(Number);
+      if (tm - 1 === calMes && ty === calAnio) {
+        turnosPorDia[td] = t;
+      }
+      // También incluir día 2 del turno (domingo)
+      const [ty2, tm2, td2] = t.fecha_fin.split('-').map(Number);
+      if (tm2 - 1 === calMes && ty2 === calAnio && !turnosPorDia[td2]) {
+        turnosPorDia[td2] = { ...t, esDia2: true };
+      }
     });
-    contenido = Object.entries(mesesMap).sort().map(([mesK, ts]) => {
-      const [y, m] = mesK.split('-');
-      const nomMes = new Date(+y, +m-1, 1).toLocaleDateString('es-EC',{month:'long',year:'numeric'});
-      return `<div class="card mb-4">
-        <div class="card-header">
-          <div class="card-title" style="text-transform:capitalize;">${nomMes}</div>
-          <span class="badge badge-neutral">${ts.length} turno${ts.length>1?'s':''}</span>
+
+    // Headers de días
+    const headersHtml = DIAS_SEMANA.map(d => `
+      <div style="text-align:center;font-size:11px;font-weight:700;
+                  letter-spacing:.05em;color:rgba(255,255,255,.6);
+                  padding:10px 0;background:var(--bg-app);">${d}</div>
+    `).join('');
+
+    // Celdas del calendario
+    let celdas = '';
+    // Celdas vacías al inicio
+    for (let i = 0; i < inicioOffset; i++) {
+      celdas += `<div style="background:var(--bg-row-alt);min-height:90px;border:1px solid var(--border);opacity:.3;"></div>`;
+    }
+    // Días del mes
+    const todayNum  = hoy.getDate();
+    const todayMes  = hoy.getMonth();
+    const todayAnio = hoy.getFullYear();
+
+    for (let d = 1; d <= diasEnMes; d++) {
+      const esHoyCell = d === todayNum && calMes === todayMes && calAnio === todayAnio;
+      const turno     = turnosPorDia[d];
+      const esFinde   = (() => {
+        const dow = new Date(calAnio, calMes, d).getDay();
+        return dow === 6 || dow === 0; // sáb o dom
+      })();
+      const esPasadoD = new Date(calAnio, calMes, d) < hoy;
+
+      let turnoHtml = '';
+      if (turno) {
+        const color = turno.confirmado ? 'var(--state-op)' : 'var(--state-mat)';
+        const bgColor = turno.confirmado ? 'var(--state-op-bg)' : 'var(--state-mat-bg)';
+        const nombre  = turno.planificador.split(' ')[0]; // Solo primer nombre
+        const ini     = turno.iniciales;
+        turnoHtml = `
+          <div style="margin-top:6px;background:${bgColor};border-left:3px solid ${color};
+                      border-radius:4px;padding:4px 6px;cursor:pointer;
+                      ${esPasadoD?'opacity:.6':''}"
+               onclick="abrirModalTurno('${turno.id}')">
+            <div style="display:flex;align-items:center;gap:4px;">
+              <div class="initials-badge ${PYL.getCityClass(turno.ciudad)}"
+                   style="width:18px;height:18px;font-size:8px;flex-shrink:0;">${ini}</div>
+              <span style="font-size:11px;font-weight:600;color:${color};
+                           white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                ${nombre}${turno.esDia2 ? ' ↩' : ''}
+              </span>
+            </div>
+          </div>`;
+      }
+
+      celdas += `
+        <div style="
+          min-height:90px;border:1px solid var(--border);padding:6px;
+          background:${esHoyCell ? 'var(--accent-light)' : esFinde ? '#F7F9FF' : 'var(--bg-card)'};
+          ${esPasadoD && !esHoyCell ? 'opacity:.65;' : ''}
+          position:relative;
+        ">
+          <div style="
+            width:24px;height:24px;border-radius:50%;
+            display:flex;align-items:center;justify-content:center;
+            font-size:12px;font-weight:${esHoyCell?'800':'600'};
+            background:${esHoyCell?'var(--accent)':'transparent'};
+            color:${esHoyCell?'#fff':'var(--text-primary)'};
+          ">${d}</div>
+          ${turnoHtml}
+        </div>`;
+    }
+
+    // Celdas vacías al final
+    const total = inicioOffset + diasEnMes;
+    const resto = total % 7 === 0 ? 0 : 7 - (total % 7);
+    for (let i = 0; i < resto; i++) {
+      celdas += `<div style="background:var(--bg-row-alt);min-height:90px;border:1px solid var(--border);opacity:.3;"></div>`;
+    }
+
+    // Leyenda
+    const leyendaHtml = `
+      <div style="display:flex;gap:var(--sp-5);margin-top:var(--sp-4);flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-secondary);">
+          <div style="width:12px;height:12px;border-radius:2px;background:var(--state-op-bg);
+                      border-left:3px solid var(--state-op);"></div> Confirmado
         </div>
-        <div class="card-body" style="padding:0;">
-          ${ts.map(t => `<div class="turno-row" style="border-bottom:1px solid var(--border);">
-            <div class="turno-fecha">${formatFechaCorta(t.fecha_inicio)} — ${formatFechaCorta(t.fecha_fin)}</div>
-            <div class="turno-planificador">
-              ${initBadge(t.iniciales, t.ciudad)}
-              <span class="turno-nombre">${t.planificador}</span>
-            </div>
-            <div style="margin-left:auto;">
-              <span class="badge ${t.confirmado?'badge-op':'badge-mat'}">${t.confirmado?'✓ Confirmado':'⏳ Pendiente'}</span>
-            </div>
-          </div>`).join('')}
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-secondary);">
+          <div style="width:12px;height:12px;border-radius:2px;background:var(--state-mat-bg);
+                      border-left:3px solid var(--state-mat);"></div> Pendiente
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-secondary);">
+          <div style="width:24px;height:24px;border-radius:50%;background:var(--accent);
+                      display:flex;align-items:center;justify-content:center;
+                      color:#fff;font-size:10px;font-weight:800;">H</div> Hoy
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-secondary);">
+          <span style="background:#F7F9FF;padding:2px 8px;border-radius:4px;border:1px solid var(--border);">SAB/DOM</span> Fin de semana
         </div>
       </div>`;
-    }).join('') || '<div class="empty"><div class="empty-title">Sin turnos futuros</div></div>';
+
+    contenido = `
+      <div class="card">
+        <div class="card-header" style="flex-direction:column;align-items:stretch;gap:var(--sp-3);">
+          ${navMes}
+        </div>
+        <div style="padding:var(--sp-3) var(--sp-4) 0;">
+          <!-- Headers días semana -->
+          <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:2px;">
+            ${headersHtml}
+          </div>
+          <!-- Grid del mes -->
+          <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:var(--sp-3);">
+            ${celdas}
+          </div>
+          ${leyendaHtml}
+        </div>
+        <div style="height:var(--sp-4);"></div>
+      </div>`;
 
   } else if (vistaActual === 'historial') {
     const pasados = turnos.filter(t => t.fecha_fin < hoyStr).reverse();
