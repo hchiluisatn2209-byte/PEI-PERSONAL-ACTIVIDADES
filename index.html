@@ -1817,37 +1817,31 @@ async function renderTurnos() {
         const nombre  = turno.planificador.split(' ')[0]; // Solo primer nombre
         const ini     = turno.iniciales;
         turnoHtml = `
-          <div style="margin-top:6px;background:${bgColor};border-left:3px solid ${color};
-                      border-radius:4px;padding:4px 6px;cursor:pointer;
-                      ${esPasadoD?'opacity:.6':''}"
-               onclick="abrirModalTurno('${turno.id}')">
-            <div style="display:flex;align-items:center;gap:4px;">
-              <div class="initials-badge ${PYL.getCityClass(turno.ciudad)}"
-                   style="width:18px;height:18px;font-size:8px;flex-shrink:0;">${ini}</div>
-              <span style="font-size:11px;font-weight:600;color:${color};
-                           white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                ${nombre}${turno.esDia2 ? ' ↩' : ''}
-              </span>
-            </div>
-          </div>`;
+          const grupoTagText = esTerc ? '🔧 Terc.' : '🗂 Plan.';
+          const grupoTag = (grupo === 'todos')
+            ? '<span style="font-size:9px;color:' + color + ';opacity:.8;font-weight:700;display:block;line-height:1.2;margin-top:1px;">' + grupoTagText + '</span>'
+            : '';
+          const opacityStr = esPasadoD ? 'opacity:.6;' : '';
+          const grupoVal = turno.grupo || 'planificacion';
+          const cityClass = PYL.getCityClass(turno.ciudad);
+          turnoHtml = '<div style="margin-top:4px;background:' + bgColor + ';border-left:3px solid ' + color + ';border-radius:4px;padding:3px 5px;cursor:pointer;' + opacityStr + '" onclick="abrirModalTurno(\'' + turno.id + '\',\'' + grupoVal + '\')">'
+            + '<div style="display:flex;align-items:center;gap:3px;">'
+            + '<div class="initials-badge ' + cityClass + '" style="width:16px;height:16px;font-size:7px;flex-shrink:0;">' + ini + '</div>'
+            + '<div style="min-width:0;">'
+            + '<span style="font-size:11px;font-weight:600;color:' + color + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;">' + nombre + (turno.esDia2 ? ' ↩' : '') + '</span>'
+            + grupoTag
+            + '</div></div></div>';
       }
 
-      celdas += `
-        <div style="
-          min-height:90px;border:1px solid var(--border);padding:6px;
-          background:${esHoyCell ? 'var(--accent-light)' : esFinde ? '#F7F9FF' : 'var(--bg-card)'};
-          ${esPasadoD && !esHoyCell ? 'opacity:.65;' : ''}
-          position:relative;
-        ">
-          <div style="
-            width:24px;height:24px;border-radius:50%;
-            display:flex;align-items:center;justify-content:center;
-            font-size:12px;font-weight:${esHoyCell?'800':'600'};
-            background:${esHoyCell?'var(--accent)':'transparent'};
-            color:${esHoyCell?'#fff':'var(--text-primary)'};
-          ">${d}</div>
-          ${turnoHtml}
-        </div>`;
+      const bgCelda  = esHoyCell ? 'var(--accent-light)' : esFinde ? '#F7F9FF' : 'var(--bg-card)';
+      const opCelda  = (esPasadoD && !esHoyCell) ? 'opacity:.65;' : '';
+      const fwNum    = esHoyCell ? '800' : '600';
+      const bgNum    = esHoyCell ? 'var(--accent)' : 'transparent';
+      const clrNum   = esHoyCell ? '#fff' : 'var(--text-primary)';
+      celdas += '<div style="min-height:90px;border:1px solid var(--border);padding:6px;background:' + bgCelda + ';' + opCelda + 'position:relative;">'
+        + '<div style="width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:' + fwNum + ';background:' + bgNum + ';color:' + clrNum + ';">' + d + '</div>'
+        + turnoHtml
+        + '</div>';
     }
 
     // Celdas vacías al final
@@ -1927,6 +1921,7 @@ async function renderTurnos() {
             ${initBadge(t.iniciales, t.ciudad)}
             <div>
               <div class="turno-nombre">${t.planificador}</div>
+              ${grupo === 'todos' ? `<div style="font-size:10px;font-weight:700;color:${t.grupo==='tercerizado'?'#7C3AED':'var(--state-op)'};">${t.grupo==='tercerizado'?'🔧 Tercerizados':'🗂 Planificación'}</div>` : ''}
               ${t.reemplazante ? `<div style="font-size:11px;color:var(--state-vac);">↔ Reemplazo: ${t.reemplazante}</div>` : ''}
             </div>
           </div>
@@ -1937,7 +1932,7 @@ async function renderTurnos() {
             ? '<span class="badge badge-op">✓ Confirmado</span>'
             : '<span class="badge badge-mat">⏳ Pendiente</span>'}</div>
           <div style="display:flex;gap:var(--sp-2);">
-            <button class="btn btn-ghost btn-sm btn-icon" onclick="abrirModalTurno('${t.id}')" title="Gestionar">✎</button>
+            <button class="btn btn-ghost btn-sm btn-icon" onclick="abrirModalTurno('${t.id}','${t.grupo||'planificacion'}')" title="Gestionar">✎</button>
             ${!esPas && !t.confirmado ? `<button class="btn btn-sm" style="background:var(--state-op);color:#fff;padding:4px 10px;font-size:11px;" onclick="confirmarTurno('${t.id}')">Confirmar</button>` : ''}
           </div>
         </div>`;
@@ -2463,8 +2458,14 @@ function cambiarMesTurnos(dir) {
 }
 
 // ── Modal gestionar turno ───────────────────────────────────
-function abrirModalTurno(id) {
-  const t = PYL.turnosMock.find(x => x.id === id);
+function abrirModalTurno(id, grupoTurno) {
+  // Buscar en ambos arrays según el grupo
+  const fuente = grupoTurno === 'tercerizado'
+    ? (PYL.turnosMockTercerizado || [])
+    : PYL.turnosMock;
+  const t = fuente.find(x => x.id === id)
+         || PYL.turnosMock.find(x => x.id === id)
+         || (PYL.turnosMockTercerizado||[]).find(x => x.id === id);
   if (!t) return;
   const overlay = document.getElementById('modalOverlay');
   document.getElementById('modalTitleEl').textContent = 'Gestionar Turno';
@@ -2475,13 +2476,17 @@ function abrirModalTurno(id) {
     </option>`
   ).join('');
 
+  const esGrupoTerc = (t.grupo === 'tercerizado');
   document.getElementById('modalBody').innerHTML = `
     <div style="display:flex;gap:var(--sp-4);align-items:center;margin-bottom:var(--sp-5);
                 background:var(--bg-row-alt);padding:var(--sp-4);border-radius:var(--r-md);">
       ${initBadge(t.iniciales, t.ciudad, 'lg')}
       <div>
         <div style="font-weight:700;">${t.planificador}</div>
-        <div style="font-size:13px;color:var(--text-muted);">
+        <div style="font-size:12px;color:${esGrupoTerc?'#7C3AED':'var(--state-op)'};font-weight:600;margin-top:2px;">
+          ${esGrupoTerc ? '🔧 Equipo Tercerizados' : '🗂 Equipo Planificación'}
+        </div>
+        <div style="font-size:13px;color:var(--text-muted);margin-top:2px;">
           ${formatFechaLarga(t.fecha_inicio)} — ${formatFechaLarga(t.fecha_fin)}
         </div>
       </div>
@@ -2520,7 +2525,8 @@ function abrirModalTurno(id) {
 }
 
 function guardarCambiosTurno(id) {
-  const t = PYL.turnosMock.find(x => x.id === id);
+  const t = PYL.turnosMock.find(x => x.id === id)
+         || (PYL.turnosMockTercerizado||[]).find(x => x.id === id);
   if (!t) return;
   const estado     = document.getElementById('turnoEstado')?.value;
   const reemplazo  = document.getElementById('turnoReemplazo')?.value;
@@ -2532,7 +2538,8 @@ function guardarCambiosTurno(id) {
 }
 
 function confirmarTurno(id) {
-  const t = PYL.turnosMock.find(x => x.id === id);
+  const t = PYL.turnosMock.find(x => x.id === id)
+         || (PYL.turnosMockTercerizado||[]).find(x => x.id === id);
   if (t) {
     t.confirmado = true;
     document.getElementById('appMain').innerHTML = renderTurnos();
