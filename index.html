@@ -3660,10 +3660,14 @@ function renderModule() {
 
   if (asyncModulos.includes(App.modulo)) {
     main.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-muted);">Cargando...</div>';
-    fn().catch(e => {
-      console.error('Error en módulo async:', e);
-      main.innerHTML = '<div style="padding:40px;text-align:center;color:var(--state-det);">Error cargando el módulo. Recarga la página.</div>';
-    });
+    const resultado = fn();
+    // Si es Promise, manejar el error; si no, ignorar
+    if (resultado && typeof resultado.catch === 'function') {
+      resultado.catch(e => {
+        console.error('Error en módulo async:', e);
+        main.innerHTML = '<div style="padding:40px;text-align:center;color:var(--state-det);">Error: ' + e.message + '</div>';
+      });
+    }
   } else {
     main.innerHTML = fn();
   }
