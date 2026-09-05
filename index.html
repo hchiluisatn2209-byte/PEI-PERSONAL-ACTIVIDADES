@@ -1596,21 +1596,12 @@ async function cargarTurnosSupabase() {
 }
 
 async function renderTurnos() {
-  console.log('renderTurnos INICIO');
+
   // Cargar desde Supabase
   const turnosDB = await cargarTurnosSupabase();
-  console.log('Turnos cargados:', turnosDB.length, turnosDB[0]);
+
   
-  // Re-obtener main DESPUÉS del await (puede haber cambiado)
-  const mainT = document.getElementById('appMain');
-  if (!mainT) { console.error('appMain perdido tras await'); return; }
-  
-  // Debug: verificar el mes calculado
-  const hoyDebug = new Date().toISOString().split('T')[0];
-  const primerDebug = PYL.turnosMock.find(t => t.fecha_fin >= hoyDebug);
-  console.log('hoy:', hoyDebug, '| primerFuturo:', primerDebug?.fecha_inicio, '| mesState:', TurnosState.mesActual, TurnosState.anioActual);
-  const delMesDebug = PYL.turnosMock.filter(t => esMesActual(t.fecha_inicio, TurnosState.mesActual, TurnosState.anioActual));
-  console.log('Turnos del mes actual:', delMesDebug.length, delMesDebug.map(t => t.fecha_inicio));
+
   
   // Re-obtener main DESPUÉS del await (puede haber cambiado)
   const mainT = document.getElementById('appMain');
@@ -1626,7 +1617,7 @@ async function renderTurnos() {
     const d = new Date(primerFuturo.fecha_inicio + 'T00:00:00');
     TurnosState.mesActual  = d.getMonth();
     TurnosState.anioActual = d.getFullYear();
-    console.log('Mes ajustado a:', MESES[TurnosState.mesActual], TurnosState.anioActual);
+  
   }
 
   // Ahora renderizar con los datos reales
@@ -1634,8 +1625,8 @@ async function renderTurnos() {
   const hoy     = new Date(); hoy.setHours(0,0,0,0);
   const mes     = TurnosState.mesActual;
   const anio    = TurnosState.anioActual;
-  console.log('renderTurnos: turnos=', turnos.length, 'mes=', mes, 'anio=', anio);
-  if (turnos.length > 0) console.log('primer turno:', turnos[0].fecha_inicio, turnos[0].planificador);
+
+
 
   // Próximo turno
   const proximo = turnos.find(t => parseFecha(t.fecha_inicio) >= hoy);
@@ -3658,7 +3649,7 @@ function renderModule() {
   const fn = renders[App.modulo] || renderDashboard;
   const asyncModulos = ['personal', 'dashboard', 'turnos'];
 
-  console.log('renderModule:', App.modulo, '| async:', asyncModulos.includes(App.modulo));
+
 
   if (asyncModulos.includes(App.modulo)) {
     main.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-muted);">Cargando...</div>';
