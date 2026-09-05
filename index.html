@@ -1753,144 +1753,83 @@ async function renderTurnos() {
   let contenido = '';
 
   if (vistaActual === 'calendario') {
-    // ── Calendario mensual tipo grid ──────────────────────
     const calMes  = mes;
     const calAnio = anio;
-    const primerDia   = new Date(calAnio, calMes, 1);
-    const ultimoDia   = new Date(calAnio, calMes + 1, 0);
-    const diasEnMes   = ultimoDia.getDate();
-    // Lunes=0 para nuestra grilla (0=Lun...6=Dom)
+    const primerDia = new Date(calAnio, calMes, 1);
+    const diasEnMes = new Date(calAnio, calMes + 1, 0).getDate();
     let inicioOffset = primerDia.getDay() - 1;
     if (inicioOffset < 0) inicioOffset = 6;
+    const DIAS_HDR = ['LUN','MAR','MIÉ','JUE','VIE','SÁB','DOM'];
 
-    const DIAS_SEMANA = ['LUN','MAR','MIÉ','JUE','VIE','SÁB','DOM'];
-
-    // Índice: día del mes → turno
+    // Índice turno por día
     const turnosPorDia = {};
-    turnos.forEach(t => {
-      const [ty, tm, td] = t.fecha_inicio.split('-').map(Number);
-      if (tm - 1 === calMes && ty === calAnio) {
-        turnosPorDia[td] = t;
-      }
-      // También incluir día 2 del turno (domingo)
-      const [ty2, tm2, td2] = t.fecha_fin.split('-').map(Number);
-      if (tm2 - 1 === calMes && ty2 === calAnio && !turnosPorDia[td2]) {
-        turnosPorDia[td2] = { ...t, esDia2: true };
-      }
+    turnos.forEach(function(t) {
+      const p1 = t.fecha_inicio.split('-').map(Number);
+      if (p1[1]-1 === calMes && p1[0] === calAnio) turnosPorDia[p1[2]] = t;
+      const p2 = t.fecha_fin.split('-').map(Number);
+      if (p2[1]-1 === calMes && p2[0] === calAnio && !turnosPorDia[p2[2]])
+        turnosPorDia[p2[2]] = Object.assign({}, t, { esDia2:true });
     });
 
-    // Headers de días
-    const headersHtml = DIAS_SEMANA.map(d => `
-      <div style="text-align:center;font-size:11px;font-weight:700;
-                  letter-spacing:.05em;color:rgba(255,255,255,.6);
-                  padding:10px 0;background:var(--bg-app);">${d}</div>
-    `).join('');
+    // Headers días semana
+    let hdrHtml = '';
+    DIAS_HDR.forEach(function(d) {
+      hdrHtml += '<div style="text-align:center;font-size:11px;font-weight:700;letter-spacing:.05em;color:rgba(255,255,255,.6);padding:10px 0;background:var(--bg-app);">' + d + '</div>';
+    });
 
-    // Celdas del calendario
-    let celdas = '';
-    // Celdas vacías al inicio
-    for (let i = 0; i < inicioOffset; i++) {
-      celdas += `<div style="background:var(--bg-row-alt);min-height:90px;border:1px solid var(--border);opacity:.3;"></div>`;
-    }
-    // Días del mes
-    const todayNum  = hoy.getDate();
-    const todayMes  = hoy.getMonth();
-    const todayAnio = hoy.getFullYear();
+    // Celdas
+    let celdasHtml = '';
+    for (let i = 0; i < inicioOffset; i++)
+      celdasHtml += '<div style="background:var(--bg-row-alt);min-height:90px;border:1px solid var(--border);opacity:.3;"></div>';
 
-    for (let d = 1; d <= diasEnMes; d++) {
-      const esHoyCell = d === todayNum && calMes === todayMes && calAnio === todayAnio;
-      const turno     = turnosPorDia[d];
-      const esFinde   = (() => {
-        const dow = new Date(calAnio, calMes, d).getDay();
-        return dow === 6 || dow === 0; // sáb o dom
-      })();
-      const esPasadoD = new Date(calAnio, calMes, d) < hoy;
+    const todayD=hoy.getDate(), todayM=hoy.getMonth(), todayY=hoy.getFullYear();
 
-      let turnoHtml = '';
+    for (let d=1; d<=diasEnMes; d++) {
+      const dow=new Date(calAnio,calMes,d).getDay();
+      const esFinde=(dow===6||dow===0);
+      const esHoyC=(d===todayD&&calMes===todayM&&calAnio===todayY);
+      const esPasD=new Date(calAnio,calMes,d)<hoy;
+      const turno=turnosPorDia[d];
+      const bgC=esHoyC?'var(--accent-light)':esFinde?'#F7F9FF':'var(--bg-card)';
+      const opC=(esPasD&&!esHoyC)?'opacity:.65;':'';
+      let th='';
       if (turno) {
-        // Color según grupo y estado
-        const esTerc = turno.grupo === 'tercerizado';
-        const colorBase = esTerc ? '#7C3AED' : (turno.confirmado ? 'var(--state-op)' : 'var(--state-mat)');
-        const bgBase    = esTerc ? '#F5F3FF'  : (turno.confirmado ? 'var(--state-op-bg)' : 'var(--state-mat-bg)');
-        const color   = colorBase;
-        const bgColor = bgBase;
-        const nombre  = turno.planificador.split(' ')[0]; // Solo primer nombre
-        const ini     = turno.iniciales;
-        turnoHtml = `
-          const grupoTagText = esTerc ? '🔧 Terc.' : '🗂 Plan.';
-          const grupoTag = (grupo === 'todos')
-            ? '<span style="font-size:9px;color:' + color + ';opacity:.8;font-weight:700;display:block;line-height:1.2;margin-top:1px;">' + grupoTagText + '</span>'
-            : '';
-          const opacityStr = esPasadoD ? 'opacity:.6;' : '';
-          const grupoVal = turno.grupo || 'planificacion';
-          const cityClass = PYL.getCityClass(turno.ciudad);
-          turnoHtml = '<div style="margin-top:4px;background:' + bgColor + ';border-left:3px solid ' + color + ';border-radius:4px;padding:3px 5px;cursor:pointer;' + opacityStr + '" onclick="abrirModalTurno(\'' + turno.id + '\',\'' + grupoVal + '\')">'
-            + '<div style="display:flex;align-items:center;gap:3px;">'
-            + '<div class="initials-badge ' + cityClass + '" style="width:16px;height:16px;font-size:7px;flex-shrink:0;">' + ini + '</div>'
-            + '<div style="min-width:0;">'
-            + '<span style="font-size:11px;font-weight:600;color:' + color + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;">' + nombre + (turno.esDia2 ? ' ↩' : '') + '</span>'
-            + grupoTag
-            + '</div></div></div>';
+        const esTerc=(turno.grupo==='tercerizado');
+        const col=esTerc?'#7C3AED':(turno.confirmado?'var(--state-op)':'var(--state-mat)');
+        const bgT=esTerc?'#F5F3FF':(turno.confirmado?'var(--state-op-bg)':'var(--state-mat-bg)');
+        const gv=turno.grupo||'planificacion';
+        const cc=PYL.getCityClass(turno.ciudad);
+        const nm=turno.planificador.split(' ')[0]+(turno.esDia2?' ↩':'');
+        const gt=(grupo==='todos')?('<span style="font-size:9px;color:'+col+';font-weight:700;display:block;">'+( esTerc?'🔧':'🗂')+'</span>'):'';
+        const op2=esPasD?'opacity:.6;':'';
+        th='<div style="margin-top:4px;background:'+bgT+';border-left:3px solid '+col+';border-radius:4px;padding:3px 5px;cursor:pointer;'+op2+'" onclick="abrirModalTurno(\''+turno.id+'\',\''+gv+'\')">'
+          +'<div style="display:flex;align-items:center;gap:3px;">'
+          +'<div class="initials-badge '+cc+'" style="width:16px;height:16px;font-size:7px;flex-shrink:0;">'+turno.iniciales+'</div>'
+          +'<div style="min-width:0;overflow:hidden;">'
+          +'<span style="font-size:11px;font-weight:600;color:'+col+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;">'+nm+'</span>'
+          +gt+'</div></div></div>';
       }
-
-      const bgCelda  = esHoyCell ? 'var(--accent-light)' : esFinde ? '#F7F9FF' : 'var(--bg-card)';
-      const opCelda  = (esPasadoD && !esHoyCell) ? 'opacity:.65;' : '';
-      const fwNum    = esHoyCell ? '800' : '600';
-      const bgNum    = esHoyCell ? 'var(--accent)' : 'transparent';
-      const clrNum   = esHoyCell ? '#fff' : 'var(--text-primary)';
-      celdas += '<div style="min-height:90px;border:1px solid var(--border);padding:6px;background:' + bgCelda + ';' + opCelda + 'position:relative;">'
-        + '<div style="width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:' + fwNum + ';background:' + bgNum + ';color:' + clrNum + ';">' + d + '</div>'
-        + turnoHtml
-        + '</div>';
+      celdasHtml+='<div style="min-height:90px;border:1px solid var(--border);padding:6px;background:'+bgC+';'+opC+'position:relative;">'
+        +'<div style="width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:'+(esHoyC?'800':'600')+';background:'+(esHoyC?'var(--accent)':'transparent')+';color:'+(esHoyC?'#fff':'var(--text-primary)')+';">'+d+'</div>'
+        +th+'</div>';
     }
+    const tot=inicioOffset+diasEnMes;
+    const rest=(tot%7===0)?0:7-(tot%7);
+    for (let i=0;i<rest;i++)
+      celdasHtml+='<div style="background:var(--bg-row-alt);min-height:90px;border:1px solid var(--border);opacity:.3;"></div>';
 
-    // Celdas vacías al final
-    const total = inicioOffset + diasEnMes;
-    const resto = total % 7 === 0 ? 0 : 7 - (total % 7);
-    for (let i = 0; i < resto; i++) {
-      celdas += `<div style="background:var(--bg-row-alt);min-height:90px;border:1px solid var(--border);opacity:.3;"></div>`;
-    }
+    const ley='<div style="display:flex;gap:20px;margin-top:12px;flex-wrap:wrap;">'
+      +'<div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-secondary);"><div style="width:12px;height:12px;border-radius:2px;background:var(--state-op-bg);border-left:3px solid var(--state-op);"></div> Plan. Confirmado</div>'
+      +'<div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-secondary);"><div style="width:12px;height:12px;border-radius:2px;background:var(--state-mat-bg);border-left:3px solid var(--state-mat);"></div> Plan. Pendiente</div>'
+      +'<div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-secondary);"><div style="width:12px;height:12px;border-radius:2px;background:#F5F3FF;border-left:3px solid #7C3AED;"></div> 🔧 Tercerizado</div>'
+      +'</div>';
 
-    // Leyenda
-    const leyendaHtml = `
-      <div style="display:flex;gap:var(--sp-5);margin-top:var(--sp-4);flex-wrap:wrap;">
-        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-secondary);">
-          <div style="width:12px;height:12px;border-radius:2px;background:var(--state-op-bg);
-                      border-left:3px solid var(--state-op);"></div> Confirmado
-        </div>
-        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-secondary);">
-          <div style="width:12px;height:12px;border-radius:2px;background:var(--state-mat-bg);
-                      border-left:3px solid var(--state-mat);"></div> Pendiente
-        </div>
-        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-secondary);">
-          <div style="width:24px;height:24px;border-radius:50%;background:var(--accent);
-                      display:flex;align-items:center;justify-content:center;
-                      color:#fff;font-size:10px;font-weight:800;">H</div> Hoy
-        </div>
-        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-secondary);">
-          <span style="background:#F7F9FF;padding:2px 8px;border-radius:4px;border:1px solid var(--border);">SAB/DOM</span> Fin de semana
-        </div>
-      </div>`;
-
-    contenido = `
-      <div class="card">
-        <div class="card-header" style="flex-direction:column;align-items:stretch;gap:var(--sp-3);">
-          ${navMes}
-        </div>
-        <div style="padding:var(--sp-3) var(--sp-4) 0;">
-          <!-- Headers días semana -->
-          <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:2px;">
-            ${headersHtml}
-          </div>
-          <!-- Grid del mes -->
-          <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:var(--sp-3);">
-            ${celdas}
-          </div>
-          ${leyendaHtml}
-        </div>
-        <div style="height:var(--sp-4);"></div>
-      </div>`;
-
+    contenido='<div class="card">'
+      +'<div class="card-header" style="flex-direction:column;align-items:stretch;gap:12px;">'+navMes+'</div>'
+      +'<div style="padding:12px 16px 0;">'
+      +'<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:2px;">'+hdrHtml+'</div>'
+      +'<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:12px;">'+celdasHtml+'</div>'
+      +ley+'</div><div style="height:16px;"></div></div>';
   } else if (vistaActual === 'historial') {
     const pasados = turnos.filter(t => t.fecha_fin < hoyStr).reverse();
     contenido = `<div class="card"><div class="card-body" style="padding:0;">
