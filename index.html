@@ -1481,6 +1481,7 @@ const TurnosState = {
   vista: 'calendario',   // 'calendario' | 'lista' | 'historial'
   mesActual: new Date().getMonth(),
   anioActual: new Date().getFullYear(),
+  grupo: 'planificacion', // 'planificacion' | 'tercerizado' | 'todos'
   turnos: [],            // cargados desde Supabase o mock
   cargando: false,
 };
@@ -1506,6 +1507,28 @@ PYL.turnosMock = [
   { id:'t20261219', fecha_inicio:'2026-12-19', fecha_fin:'2026-12-20', planificador:'WENDY SALAZAR', iniciales:'WS', ciudad:'GYE', confirmado:false, reemplazante:null },
   { id:'t20261226', fecha_inicio:'2026-12-26', fecha_fin:'2026-12-27', planificador:'SILVIA ORTIZ', iniciales:'SO', ciudad:'UIO', confirmado:false, reemplazante:null },
   { id:'t20270102', fecha_inicio:'2027-01-02', fecha_fin:'2027-01-03', planificador:'VERÓNICA CARRILLO', iniciales:'CQ', ciudad:'GYE', confirmado:false, reemplazante:null },
+];
+
+// Turnos Tercerizados
+PYL.turnosMockTercerizado = [
+  { id:'tter20260829', grupo:'tercerizado', fecha_inicio:'2026-08-29', fecha_fin:'2026-08-30', planificador:'LOPEZ TOPANTA ERIKA ALEXANDRA', iniciales:'LT', ciudad:'UIO', confirmado:false, reemplazante:null },
+  { id:'tter20260905', grupo:'tercerizado', fecha_inicio:'2026-09-05', fecha_fin:'2026-09-06', planificador:'OÑATE CAMPANA ALEXIS DAVID', iniciales:'AOC', ciudad:'UIO', confirmado:false, reemplazante:null },
+  { id:'tter20260912', grupo:'tercerizado', fecha_inicio:'2026-09-12', fecha_fin:'2026-09-13', planificador:'CRUZ CARGUA VERÓNICA LUCIA', iniciales:'CC', ciudad:'UIO', confirmado:false, reemplazante:null },
+  { id:'tter20260919', grupo:'tercerizado', fecha_inicio:'2026-09-19', fecha_fin:'2026-09-20', planificador:'LOPEZ TOPANTA ERIKA ALEXANDRA', iniciales:'LT', ciudad:'UIO', confirmado:false, reemplazante:null },
+  { id:'tter20260926', grupo:'tercerizado', fecha_inicio:'2026-09-26', fecha_fin:'2026-09-27', planificador:'OÑATE CAMPANA ALEXIS DAVID', iniciales:'AOC', ciudad:'UIO', confirmado:false, reemplazante:null },
+  { id:'tter20261003', grupo:'tercerizado', fecha_inicio:'2026-10-03', fecha_fin:'2026-10-04', planificador:'CRUZ CARGUA VERÓNICA LUCIA', iniciales:'CC', ciudad:'UIO', confirmado:false, reemplazante:null },
+  { id:'tter20261010', grupo:'tercerizado', fecha_inicio:'2026-10-10', fecha_fin:'2026-10-11', planificador:'LOPEZ TOPANTA ERIKA ALEXANDRA', iniciales:'LT', ciudad:'UIO', confirmado:false, reemplazante:null },
+  { id:'tter20261017', grupo:'tercerizado', fecha_inicio:'2026-10-17', fecha_fin:'2026-10-18', planificador:'OÑATE CAMPANA ALEXIS DAVID', iniciales:'AOC', ciudad:'UIO', confirmado:false, reemplazante:null },
+  { id:'tter20261024', grupo:'tercerizado', fecha_inicio:'2026-10-24', fecha_fin:'2026-10-25', planificador:'CRUZ CARGUA VERÓNICA LUCIA', iniciales:'CC', ciudad:'UIO', confirmado:false, reemplazante:null },
+  { id:'tter20261031', grupo:'tercerizado', fecha_inicio:'2026-10-31', fecha_fin:'2026-11-01', planificador:'LOPEZ TOPANTA ERIKA ALEXANDRA', iniciales:'LT', ciudad:'UIO', confirmado:false, reemplazante:null },
+  { id:'tter20261107', grupo:'tercerizado', fecha_inicio:'2026-11-07', fecha_fin:'2026-11-08', planificador:'OÑATE CAMPANA ALEXIS DAVID', iniciales:'AOC', ciudad:'UIO', confirmado:false, reemplazante:null },
+  { id:'tter20261114', grupo:'tercerizado', fecha_inicio:'2026-11-14', fecha_fin:'2026-11-15', planificador:'CRUZ CARGUA VERÓNICA LUCIA', iniciales:'CC', ciudad:'UIO', confirmado:false, reemplazante:null },
+  { id:'tter20261121', grupo:'tercerizado', fecha_inicio:'2026-11-21', fecha_fin:'2026-11-22', planificador:'LOPEZ TOPANTA ERIKA ALEXANDRA', iniciales:'LT', ciudad:'UIO', confirmado:false, reemplazante:null },
+  { id:'tter20261128', grupo:'tercerizado', fecha_inicio:'2026-11-28', fecha_fin:'2026-11-29', planificador:'OÑATE CAMPANA ALEXIS DAVID', iniciales:'AOC', ciudad:'UIO', confirmado:false, reemplazante:null },
+  { id:'tter20261205', grupo:'tercerizado', fecha_inicio:'2026-12-05', fecha_fin:'2026-12-06', planificador:'CRUZ CARGUA VERÓNICA LUCIA', iniciales:'CC', ciudad:'UIO', confirmado:false, reemplazante:null },
+  { id:'tter20261212', grupo:'tercerizado', fecha_inicio:'2026-12-12', fecha_fin:'2026-12-13', planificador:'LOPEZ TOPANTA ERIKA ALEXANDRA', iniciales:'LT', ciudad:'UIO', confirmado:false, reemplazante:null },
+  { id:'tter20261219', grupo:'tercerizado', fecha_inicio:'2026-12-19', fecha_fin:'2026-12-20', planificador:'OÑATE CAMPANA ALEXIS DAVID', iniciales:'AOC', ciudad:'UIO', confirmado:false, reemplazante:null },
+  { id:'tter20261226', grupo:'tercerizado', fecha_inicio:'2026-12-26', fecha_fin:'2026-12-27', planificador:'CRUZ CARGUA VERÓNICA LUCIA', iniciales:'CC', ciudad:'UIO', confirmado:false, reemplazante:null }
 ];
 
 // Helpers de fecha
@@ -1600,7 +1623,16 @@ async function renderTurnos() {
 
   const hoy     = new Date(); hoy.setHours(0,0,0,0);
   const hoyStr  = hoy.toISOString().split('T')[0];
-  const turnos  = PYL.turnosMock;
+  const grupo   = TurnosState.grupo || 'planificacion';
+
+  // Seleccionar turnos según grupo
+  const todosTurnos = [
+    ...PYL.turnosMock.map(t => ({ ...t, grupo: t.grupo || 'planificacion' })),
+    ...(PYL.turnosMockTercerizado || []),
+  ];
+  const turnos = grupo === 'todos'
+    ? todosTurnos
+    : todosTurnos.filter(t => t.grupo === grupo);
 
   // 3. Iniciar en mes actual del sistema
   let mes  = TurnosState.mesActual;
@@ -1679,13 +1711,30 @@ async function renderTurnos() {
     </div>`).join('')}
   </div>`;
 
-  // 7. Tabs vista
+  // 7. Tabs vista + selector de grupo
   const vistaActual = TurnosState.vista || 'lista';
   const tabsHtml = ['lista','calendario','historial'].map(v => `
     <div class="tab ${vistaActual === v ? 'active' : ''}"
          onclick="cambiarVistaTurnos('${v}')">
       ${{ lista:'☰ Lista', calendario:'📅 Calendario', historial:'🕐 Historial' }[v]}
     </div>`).join('');
+
+  const grupoLabels = { planificacion:'🗂 Planificación', tercerizado:'🔧 Tercerizados', todos:'👥 Todos' };
+  const grupoBtns = ['planificacion','tercerizado','todos'].map(g => {
+    const activo = grupo === g;
+    const bdr = activo ? 'var(--accent)' : 'var(--border)';
+    const bkg = activo ? 'var(--accent)' : 'var(--bg-card)';
+    const clr = activo ? '#fff' : 'var(--text-secondary)';
+    return `<button onclick="cambiarGrupoTurnos('${g}')"
+      style="padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;
+             cursor:pointer;border:1.5px solid ${bdr};background:${bkg};
+             color:${clr};transition:all .15s;">${grupoLabels[g]}</button>`;
+  }).join('');
+  const grupoSelectorHtml = `<div style="display:flex;align-items:center;gap:var(--sp-2);margin-bottom:var(--sp-3);">
+      <span style="font-size:11px;font-weight:700;color:var(--text-muted);
+                   text-transform:uppercase;letter-spacing:.05em;">Equipo:</span>
+      ${grupoBtns}
+    </div>`;
 
   // 8. Navegación de mes
   const navMes = `
@@ -1759,8 +1808,12 @@ async function renderTurnos() {
 
       let turnoHtml = '';
       if (turno) {
-        const color = turno.confirmado ? 'var(--state-op)' : 'var(--state-mat)';
-        const bgColor = turno.confirmado ? 'var(--state-op-bg)' : 'var(--state-mat-bg)';
+        // Color según grupo y estado
+        const esTerc = turno.grupo === 'tercerizado';
+        const colorBase = esTerc ? '#7C3AED' : (turno.confirmado ? 'var(--state-op)' : 'var(--state-mat)');
+        const bgBase    = esTerc ? '#F5F3FF'  : (turno.confirmado ? 'var(--state-op-bg)' : 'var(--state-mat-bg)');
+        const color   = colorBase;
+        const bgColor = bgBase;
         const nombre  = turno.planificador.split(' ')[0]; // Solo primer nombre
         const ini     = turno.iniciales;
         turnoHtml = `
@@ -1918,6 +1971,7 @@ async function renderTurnos() {
   </div>
   ${proximoCard}
   ${kpisHtml}
+  ${grupoSelectorHtml}
   <div class="tabs">${tabsHtml}</div>
   ${contenido}`;
 
@@ -1927,6 +1981,12 @@ async function renderTurnos() {
 // Cambiar vista del módulo turnos
 function cambiarVistaTurnos(vista) {
   TurnosState.vista = vista;
+  navigate('turnos');
+}
+
+// Cambiar grupo de turnos
+function cambiarGrupoTurnos(grupo) {
+  TurnosState.grupo = grupo;
   navigate('turnos');
 }
 
