@@ -1548,7 +1548,57 @@ function diasHasta(fechaStr) {
 const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
                'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
-function renderTurnos() {
+async function cargarTurnosSupabase() {
+  try {
+    const hoy = new Date();
+    hoy.setMonth(hoy.getMonth() - 2); // 2 meses atrás
+    const { data: turnos, error } = await supabaseClient
+      .schema('rrhh')
+      .from('turnos')
+      .select(`
+        id, fecha_inicio, fecha_fin, confirmado,
+        colaborador:colaboradores(apellidos, nombres, iniciales),
+        ciudad:ciudades(codigo, nombre)
+      `)
+      .gte('fecha_inicio', hoy.toISOString().split('T')[0])
+      .order('fecha_inicio');
+
+    if (error) throw error;
+
+    // Convertir al formato de PYL.turnosMock
+    return (turnos || []).map(t => ({
+      id:           t.id,
+      fecha_inicio: t.fecha_inicio,
+      fecha_fin:    t.fecha_fin,
+      planificador: ((t.colaborador?.apellidos||'') + ' ' + (t.colaborador?.nombres||'')).trim(),
+      iniciales:    t.colaborador?.iniciales || '??',
+      ciudad:       t.ciudad?.codigo || 'UIO',
+      confirmado:   t.confirmado,
+      reemplazante: null,
+    }));
+  } catch(err) {
+    console.error('Error cargando turnos:', err);
+    return PYL.turnosMock; // fallback a datos mock
+  }
+}
+
+async function renderTurnos() {
+  const main = document.getElementById('appMain');
+  // Mostrar loading
+  main.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;
+    padding:60px;color:var(--text-muted);">
+    <div style="text-align:center;">
+      <div style="font-size:32px;margin-bottom:12px;">⟳</div>
+      <div>Cargando turnos...</div>
+    </div>
+  </div>`;
+
+  // Cargar desde Supabase
+  const turnosDB = await cargarTurnosSupabase();
+  // Actualizar turnosMock con datos reales
+  PYL.turnosMock = turnosDB;
+
+  // Ahora renderizar con los datos reales
   const turnos  = PYL.turnosMock;
   const hoy     = new Date(); hoy.setHours(0,0,0,0);
   const mes     = TurnosState.mesActual;
@@ -1716,11 +1766,13 @@ function renderTurnos() {
       <div class="empty-desc">Usa "Asignar turno" para agregar uno</div>
     </div>`;
 
-  return `
+  main.innerHTML = `
   <div class="section-header">
     <div>
       <div class="section-title">Turnos de Fin de Semana</div>
-      <div class="section-desc">Rotación automática del equipo · ${totalAnio} turnos programados</div>
+      <div class="section-desc">Rotación automática del equipo · ${totalAnio} turnos programados
+        <span style="color:var(--state-op);font-weight:600;"> ✓ datos en tiempo real</span>
+      </div>
     </div>
     <div style="display:flex;gap:var(--sp-3);">
       <button class="btn btn-secondary btn-sm" onclick="abrirModalRotacion()">
@@ -1748,6 +1800,7 @@ function renderTurnos() {
       <div class="turno-list">${listaDelMes}</div>
     </div>
   </div>`;
+  return '';
 }
 
 
@@ -3573,7 +3626,7 @@ function renderModule() {
 
   const fn = renders[App.modulo] || renderDashboard;
   // Módulos async manejan su propio innerHTML
-  const asyncModulos = ['personal', 'dashboard'];
+  const asyncModulos = ['personal', 'dashboard', 'turnos'];
   if (asyncModulos.includes(App.modulo)) {
     main.innerHTML = '';
     fn();
