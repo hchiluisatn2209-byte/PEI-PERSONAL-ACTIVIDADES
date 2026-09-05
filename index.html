@@ -1890,6 +1890,202 @@ async function renderPersonal() {
   return '';
 }
 
+
+// ── Render helpers ────────────────────────────────────────
+function renderIcon(name, cls = '') {
+  return `<span class="nav-icon ${cls}">${ICONS[name] || ''}</span>`;
+}
+
+function initBadge(iniciales, ciudad, size = '') {
+  const c = PYL.getCityClass(ciudad);
+  const s = size ? `sz-${size}` : '';
+  return `<div class="initials-badge ${c} ${s}" data-tooltip="${iniciales}">${iniciales}</div>`;
+}
+
+function renderBadge(disp) {
+  const b = PYL.getDisponibilidadBadge(disp);
+  const dot = disp !== 'operativo'
+    ? `<span style="width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block;"></span>`
+    : '';
+  return `<span class="badge ${b.cls}">${dot}${b.label}</span>`;
+}
+
+function renderCheckbox(checked) {
+  return `<div class="task-check ${checked ? 'checked' : ''}" role="checkbox" aria-checked="${checked}">
+    ${ICONS.check}
+  </div>`;
+}
+
+// ── Sidebar ───────────────────────────────────────────────
+function renderSidebar() {
+  return `
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-mark">
+        <div class="logo-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
+            <path d="M22 12H18L15 21 9 3 6 12 2 12"/>
+          </svg>
+        </div>
+        <div class="logo-text">
+          <div class="logo-product">🥇 PLANPEI</div>
+          <div class="logo-company">Telconet</div>
+        </div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">
+        <div class="nav-section-label">Principal</div>
+        <div class="nav-item ${App.modulo === 'dashboard' ? 'active' : ''}" onclick="navigate('dashboard')">
+          ${renderIcon('dashboard')} Dashboard
+        </div>
+        <div class="nav-item ${App.modulo === 'planning' ? 'active' : ''}" onclick="navigate('planning')">
+          ${renderIcon('planning')} Distribución Semanal
+          <span class="nav-badge">↻</span>
+        </div>
+      </div>
+      <div class="nav-section">
+        <div class="nav-section-label">RRHH</div>
+        <div class="nav-item ${App.modulo === 'personal' ? 'active' : ''}" onclick="navigate('personal')">
+          ${renderIcon('personal')} Personal
+        </div>
+        <div class="nav-item ${App.modulo === 'turnos' ? 'active' : ''}" onclick="navigate('turnos')">
+          ${renderIcon('turnos')} Turnos
+          <span class="nav-badge" style="background:#8B5CF6">2</span>
+        </div>
+      </div>
+      <div class="nav-section">
+        <div class="nav-section-label">Operativo</div>
+        <div class="nav-item ${App.modulo === 'clientes' ? 'active' : ''}" onclick="navigate('clientes')">
+          ${renderIcon('clientes')} Clientes
+        </div>
+        <div class="nav-item ${App.modulo === 'ts' ? 'active' : ''}" onclick="navigate('ts')">
+          ${renderIcon('ts')} Técnicas Sucursales
+        </div>
+        <div class="nav-item ${App.modulo === 'motivos' ? 'active' : ''}" onclick="navigate('motivos')">
+          ${renderIcon('motivos')} Motivos y Plantillas
+        </div>
+        <div class="nav-item ${App.modulo === 'acuerdos' ? 'active' : ''}" onclick="navigate('acuerdos')">
+          ${renderIcon('acuerdos')} Acuerdos y Directrices
+        </div>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-card">
+        <div class="user-avatar">${(window.CURRENT_USER?.initials || 'HC')}</div>
+        <div class="user-info">
+          <div class="user-name">${(window.CURRENT_USER?.name?.split(' ')[0] || 'Usuario')}</div>
+          <div class="user-role">${(window.CURRENT_USER?.role || 'Coordinador')}</div>
+        </div>
+      </div>
+    </div>
+  </aside>`;
+}
+
+// ── Header ────────────────────────────────────────────────
+function renderHeader(title, sub = '') {
+  const semana = PYL.semanas[App.semanaIdx];
+  return `
+  <header class="app-header" id="appHeader">
+    <div class="header-title">${title}
+      ${sub ? `<span class="header-subtitle">${sub}</span>` : ''}
+    </div>
+    <div class="header-actions">
+      ${App.modulo === 'planning' ? `
+        <div class="week-nav">
+          <button class="week-btn" onclick="changeSemana(-1)">${ICONS.chevLeft}</button>
+          <div>
+            <div class="week-nav-label">${semana.label}</div>
+            <div class="week-nav-sub">${PYL.formatDate(semana.inicio)} — ${PYL.formatDate(semana.fin)}</div>
+          </div>
+          <button class="week-btn" onclick="changeSemana(1)">${ICONS.chevRight}</button>
+        </div>` : ''}
+      <button class="btn btn-secondary btn-sm">${ICONS.download} Exportar</button>
+    </div>
+  </header>`;
+}
+
+// ── renderPlanning ────────────────────────────────────────
+function renderPlanning() {
+  const semana = PYL.semanas[App.semanaIdx];
+  const tareas = PYL.columnaTareas || [];
+  let colabs = PYL.colaboradores.filter(c => {
+    if (App.filtroGrupo  !== 'all' && c.grupo !== App.filtroGrupo) return false;
+    if (App.filtroCiudad !== 'all' && c.ciudad !== App.filtroCiudad) return false;
+    if (App.filtroDisp   !== 'all' && c.disponibilidad !== App.filtroDisp) return false;
+    if (App.busqueda) {
+      const q = App.busqueda.toLowerCase();
+      return c.nombre.toLowerCase().includes(q) || c.iniciales.toLowerCase().includes(q) || (c.clientes||[]).join(' ').toLowerCase().includes(q);
+    }
+    return true;
+  });
+
+  const taskHeaders = (tareas).map(t => `<th class="task-cell" data-tooltip="${t.label}">${t.abbr}</th>`).join('');
+  const grupos = PYL.grupos || [];
+  let rowsHtml = '';
+
+  grupos.forEach(grupo => {
+    const miembros = colabs.filter(c => c.grupo === grupo.id);
+    if (!miembros.length) return;
+    rowsHtml += `<tr class="group-header"><td colspan="${7 + tareas.length}"><span class="group-dot" style="background:${grupo.dot}"></span>${grupo.label} <span style="opacity:.5;margin-left:8px;">(${miembros.length})</span></td></tr>`;
+    miembros.forEach(c => {
+      const tarea = (App.tareas||{})[c.id] || {};
+      const rowCls = PYL.getRowClass(c.disponibilidad);
+      const bDisp = PYL.getDisponibilidadBadge(c.disponibilidad);
+      const bk1 = c.backup1 ? `<span class="backup-badge">${c.backup1}</span>` : '';
+      const bk2 = c.backup2 ? `<span class="backup-badge">${c.backup2}</span>` : '';
+      const cliHtml = (c.clientes||[]).length ? c.clientes.map(cl=>`<span class="cliente-tag">• ${cl}</span>`).join('') : `<span class="cliente-tag" style="color:var(--text-muted);font-style:italic;">Sin asignación</span>`;
+      const tsHtml = c.disponibilidad !== 'operativo' && c.disponibilidad !== 'lactancia' ? `<span class="badge ${bDisp.cls}">${bDisp.label.toUpperCase()}</span>` : c.ts ? `<span class="ts-value">${c.ts}</span>` : `<span class="ts-empty">— Sin TS —</span>`;
+      const taskCells = tareas.map(t=>`<td class="task-cell"><div class="task-check ${tarea[t.key]?'checked':''}" onclick="toggleTarea('${c.id}','${t.key}',this)" role="checkbox" aria-checked="${!!tarea[t.key]}">${ICONS.check}</div></td>`).join('');
+      rowsHtml += `<tr class="${rowCls}"><td class="col-planificador"><div class="planner-cell">${initBadge(c.iniciales,c.ciudad)}<div class="planner-info"><div class="planner-name">${c.nombre}</div><div class="planner-cargo">${c.cargo}</div></div></div></td><td class="dispon-cell">${renderBadge(c.disponibilidad)}</td><td class="ts-cell">${tsHtml}</td><td class="backup-cell"><div class="backup-pair">${bk1}${bk2}</div></td><td class="clientes-cell"><div class="cliente-tags">${cliHtml}</div></td><td class="obs-cell"><span class="obs-text" title="${c.obs||''}">${c.obs||''}</span></td>${taskCells}</tr>`;
+    });
+  });
+
+  return `
+  <div class="dist-wrap">
+    <div class="dist-toolbar">
+      <div class="dist-toolbar-title">Distribución Semanal <span style="font-weight:400;color:var(--text-muted);margin-left:8px;">${semana.label}</span></div>
+      <div class="filter-group">
+        <div class="search-wrap"><span class="search-icon">${ICONS.search}</span><input type="text" class="search-input" placeholder="Buscar planificador..." id="searchInput" value="${App.busqueda}" oninput="App.busqueda=this.value;renderModule()"></div>
+      </div>
+      <div class="filter-group">
+        <select class="filter-select" onchange="App.filtroGrupo=this.value;renderModule()">
+          <option value="all">Todos los grupos</option>
+          ${(PYL.grupos||[]).map(g=>`<option value="${g.id}" ${App.filtroGrupo===g.id?'selected':''}>${g.label}</option>`).join('')}
+        </select>
+        <select class="filter-select" onchange="App.filtroCiudad=this.value;renderModule()">
+          <option value="all">Todas las ciudades</option>
+          <option value="UIO">UIO — Quito</option>
+          <option value="GYE">GYE — Guayaquil</option>
+          <option value="MIL">MIL — Milagro</option>
+        </select>
+        <select class="filter-select" onchange="App.filtroDisp=this.value;renderModule()">
+          <option value="all">Toda disponibilidad</option>
+          <option value="operativo">Operativo</option>
+          <option value="lactancia">Lactancia</option>
+          <option value="maternidad">Maternidad</option>
+          <option value="vacaciones">Vacaciones</option>
+        </select>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="openModalNuevoRegistro()">${ICONS.plus} Nueva fila</button>
+    </div>
+    <div class="dist-scroll">
+      <table class="dist-table">
+        <thead><tr>
+          <th class="col-sticky" style="min-width:200px;">Planificador</th>
+          <th style="min-width:100px;">Disponibilidad</th>
+          <th style="min-width:180px;">Técnica Sucursal</th>
+          <th style="min-width:90px;">Backups</th>
+          <th style="min-width:200px;">Clientes / Proyectos</th>
+          <th style="min-width:160px;">Observaciones</th>
+          ${taskHeaders}
+        </tr></thead>
+        <tbody>${rowsHtml}</tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
 async function cargarKpisSupabase() {
   try {
     const { data: colabs } = await supabaseClient.schema('rrhh').from('colaboradores').select('id,estado_laboral,activo').eq('activo', true);
