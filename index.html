@@ -1487,31 +1487,25 @@ const TurnosState = {
 
 // Datos mock de turnos (próximos meses — reemplazar con Supabase)
 PYL.turnosMock = [
-  // Enero 2025
-  { id:'t1',  fecha_inicio:'2025-01-18', fecha_fin:'2025-01-19', planificador:'TATIANA URBANO',     iniciales:'TU',  ciudad:'UIO', confirmado:true,  reemplazante:null },
-  { id:'t2',  fecha_inicio:'2025-01-25', fecha_fin:'2025-01-26', planificador:'SILVIA ORTIZ',       iniciales:'SO',  ciudad:'UIO', confirmado:true,  reemplazante:null },
-  // Febrero 2025
-  { id:'t3',  fecha_inicio:'2025-02-01', fecha_fin:'2025-02-02', planificador:'WENDY GAONA',        iniciales:'WG',  ciudad:'GYE', confirmado:true,  reemplazante:null },
-  { id:'t4',  fecha_inicio:'2025-02-08', fecha_fin:'2025-02-09', planificador:'LOURDES OVIEDO',     iniciales:'LO',  ciudad:'GYE', confirmado:true,  reemplazante:null },
-  { id:'t5',  fecha_inicio:'2025-02-15', fecha_fin:'2025-02-16', planificador:'ANA GUALLPA',        iniciales:'BGU', ciudad:'UIO', confirmado:false, reemplazante:null },
-  { id:'t6',  fecha_inicio:'2025-02-22', fecha_fin:'2025-02-23', planificador:'SORAYA VACACELA',    iniciales:'SV',  ciudad:'GYE', confirmado:true,  reemplazante:null },
-  // Marzo 2025
-  { id:'t7',  fecha_inicio:'2025-03-01', fecha_fin:'2025-03-02', planificador:'CHRISTIAN VALAREZO',iniciales:'CV',  ciudad:'MIL', confirmado:true,  reemplazante:null },
-  { id:'t8',  fecha_inicio:'2025-03-08', fecha_fin:'2025-03-09', planificador:'KAREN HERRERA',      iniciales:'KH',  ciudad:'GYE', confirmado:false, reemplazante:null },
-  { id:'t9',  fecha_inicio:'2025-03-15', fecha_fin:'2025-03-16', planificador:'GABRIELA MINA',      iniciales:'GM',  ciudad:'GYE', confirmado:true,  reemplazante:null },
-  { id:'t10', fecha_inicio:'2025-03-22', fecha_fin:'2025-03-23', planificador:'ROMINA ACOSTA',      iniciales:'RA',  ciudad:'GYE', confirmado:false, reemplazante:null },
-  { id:'t11', fecha_inicio:'2025-03-29', fecha_fin:'2025-03-30', planificador:'MELANY OROZCO',      iniciales:'MOV', ciudad:'UIO', confirmado:true,  reemplazante:null },
-  // Abril 2025
-  { id:'t12', fecha_inicio:'2025-04-05', fecha_fin:'2025-04-06', planificador:'ANGEL MEJIA',        iniciales:'AM',  ciudad:'GYE', confirmado:true,  reemplazante:null },
-  { id:'t13', fecha_inicio:'2025-04-12', fecha_fin:'2025-04-13', planificador:'LUIS GAIBOR',        iniciales:'LG',  ciudad:'UIO', confirmado:false, reemplazante:null },
-  { id:'t14', fecha_inicio:'2025-04-19', fecha_fin:'2025-04-20', planificador:'FERNANDO BONIFAS',   iniciales:'FB',  ciudad:'UIO', confirmado:true,  reemplazante:null },
-  { id:'t15', fecha_inicio:'2025-04-26', fecha_fin:'2025-04-27', planificador:'CHRISTIAN ALMEIDA',  iniciales:'CA',  ciudad:'UIO', confirmado:false, reemplazante:null },
-  // Mayo 2025
-  { id:'t16', fecha_inicio:'2025-05-03', fecha_fin:'2025-05-04', planificador:'ALEJANDRA GALLARDO', iniciales:'AG',  ciudad:'UIO', confirmado:true,  reemplazante:null },
-  { id:'t17', fecha_inicio:'2025-05-10', fecha_fin:'2025-05-11', planificador:'VERONICA CRUZ',      iniciales:'VC',  ciudad:'UIO', confirmado:false, reemplazante:null },
-  { id:'t18', fecha_inicio:'2025-05-17', fecha_fin:'2025-05-18', planificador:'ERIKA LOPEZ',        iniciales:'EL',  ciudad:'UIO', confirmado:true,  reemplazante:null },
-  { id:'t19', fecha_inicio:'2025-05-24', fecha_fin:'2025-05-25', planificador:'TATIANA URBANO',     iniciales:'TU',  ciudad:'UIO', confirmado:false, reemplazante:null },
-  { id:'t20', fecha_inicio:'2025-05-31', fecha_fin:'2025-06-01', planificador:'SILVIA ORTIZ',       iniciales:'SO',  ciudad:'UIO', confirmado:true,  reemplazante:'MELANY OROZCO' },
+  { id:'t20260829', fecha_inicio:'2026-08-29', fecha_fin:'2026-08-30', planificador:'VERÓNICA CARRILLO', iniciales:'CQ', ciudad:'GYE', confirmado:false, reemplazante:null },
+  { id:'t20260905', fecha_inicio:'2026-09-05', fecha_fin:'2026-09-06', planificador:'TATIANA URBANO', iniciales:'TU', ciudad:'UIO', confirmado:false, reemplazante:null },
+  { id:'t20260912', fecha_inicio:'2026-09-12', fecha_fin:'2026-09-13', planificador:'MELANY OROZCO', iniciales:'MOV', ciudad:'UIO', confirmado:false, reemplazante:null },
+  { id:'t20260919', fecha_inicio:'2026-09-19', fecha_fin:'2026-09-20', planificador:'ROMINA ACOSTA', iniciales:'RA', ciudad:'GYE', confirmado:false, reemplazante:null },
+  { id:'t20260926', fecha_inicio:'2026-09-26', fecha_fin:'2026-09-27', planificador:'WENDY SALAZAR', iniciales:'WS', ciudad:'GYE', confirmado:false, reemplazante:null },
+  { id:'t20261003', fecha_inicio:'2026-10-03', fecha_fin:'2026-10-04', planificador:'SILVIA ORTIZ', iniciales:'SO', ciudad:'UIO', confirmado:false, reemplazante:null },
+  { id:'t20261010', fecha_inicio:'2026-10-10', fecha_fin:'2026-10-11', planificador:'VERÓNICA CARRILLO', iniciales:'CQ', ciudad:'GYE', confirmado:false, reemplazante:null },
+  { id:'t20261017', fecha_inicio:'2026-10-17', fecha_fin:'2026-10-18', planificador:'TATIANA URBANO', iniciales:'TU', ciudad:'UIO', confirmado:false, reemplazante:null },
+  { id:'t20261024', fecha_inicio:'2026-10-24', fecha_fin:'2026-10-25', planificador:'MELANY OROZCO', iniciales:'MOV', ciudad:'UIO', confirmado:false, reemplazante:null },
+  { id:'t20261031', fecha_inicio:'2026-10-31', fecha_fin:'2026-11-01', planificador:'ROMINA ACOSTA', iniciales:'RA', ciudad:'GYE', confirmado:false, reemplazante:null },
+  { id:'t20261107', fecha_inicio:'2026-11-07', fecha_fin:'2026-11-08', planificador:'WENDY SALAZAR', iniciales:'WS', ciudad:'GYE', confirmado:false, reemplazante:null },
+  { id:'t20261114', fecha_inicio:'2026-11-14', fecha_fin:'2026-11-15', planificador:'SILVIA ORTIZ', iniciales:'SO', ciudad:'UIO', confirmado:false, reemplazante:null },
+  { id:'t20261121', fecha_inicio:'2026-11-21', fecha_fin:'2026-11-22', planificador:'VERÓNICA CARRILLO', iniciales:'CQ', ciudad:'GYE', confirmado:false, reemplazante:null },
+  { id:'t20261128', fecha_inicio:'2026-11-28', fecha_fin:'2026-11-29', planificador:'TATIANA URBANO', iniciales:'TU', ciudad:'UIO', confirmado:false, reemplazante:null },
+  { id:'t20261205', fecha_inicio:'2026-12-05', fecha_fin:'2026-12-06', planificador:'MELANY OROZCO', iniciales:'MOV', ciudad:'UIO', confirmado:false, reemplazante:null },
+  { id:'t20261212', fecha_inicio:'2026-12-12', fecha_fin:'2026-12-13', planificador:'ROMINA ACOSTA', iniciales:'RA', ciudad:'GYE', confirmado:false, reemplazante:null },
+  { id:'t20261219', fecha_inicio:'2026-12-19', fecha_fin:'2026-12-20', planificador:'WENDY SALAZAR', iniciales:'WS', ciudad:'GYE', confirmado:false, reemplazante:null },
+  { id:'t20261226', fecha_inicio:'2026-12-26', fecha_fin:'2026-12-27', planificador:'SILVIA ORTIZ', iniciales:'SO', ciudad:'UIO', confirmado:false, reemplazante:null },
+  { id:'t20270102', fecha_inicio:'2027-01-02', fecha_fin:'2027-01-03', planificador:'VERÓNICA CARRILLO', iniciales:'CQ', ciudad:'GYE', confirmado:false, reemplazante:null },
 ];
 
 // Helpers de fecha
@@ -1596,210 +1590,203 @@ async function cargarTurnosSupabase() {
 }
 
 async function renderTurnos() {
-
-  // Cargar desde Supabase
+  // 1. Cargar datos desde Supabase
   const turnosDB = await cargarTurnosSupabase();
+  if (turnosDB.length > 0) PYL.turnosMock = turnosDB;
 
-  
+  // 2. Re-obtener main después del await
+  const main = document.getElementById('appMain');
+  if (!main) return;
 
-  
-  // Re-obtener main DESPUÉS del await (puede haber cambiado)
-  const mainT = document.getElementById('appMain');
-  if (!mainT) { console.error('appMain perdido tras await'); return; }
-  
-  // Actualizar turnosMock con datos reales
-  PYL.turnosMock = turnosDB.length > 0 ? turnosDB : PYL.turnosMock;
+  const hoy     = new Date(); hoy.setHours(0,0,0,0);
+  const hoyStr  = hoy.toISOString().split('T')[0];
+  const turnos  = PYL.turnosMock;
 
-  // Ajustar mes: usar el mes del sistema, y si no hay turnos, ir al primer turno futuro
-  const hoyDate  = new Date();
-  const hoyStr   = hoyDate.toISOString().split('T')[0];
-  // Iniciar siempre en el mes actual del sistema
-  TurnosState.mesActual  = hoyDate.getMonth();
-  TurnosState.anioActual = hoyDate.getFullYear();
-  // Si no hay turnos en el mes actual, avanzar al mes del primer turno futuro
-  const delMesActual = PYL.turnosMock.filter(t =>
-    t.fecha_inicio.substring(0,7) === hoyDate.getFullYear() + '-' + String(hoyDate.getMonth()+1).padStart(2,'0')
-  );
+  // 3. Iniciar en mes actual del sistema
+  let mes  = TurnosState.mesActual;
+  let anio = TurnosState.anioActual;
+
+  // 4. Si no hay turnos en mes actual, ir al primer turno futuro
+  const mesStr = anio + '-' + String(mes + 1).padStart(2, '0');
+  const delMesActual = turnos.filter(t => t.fecha_inicio.startsWith(mesStr));
   if (delMesActual.length === 0) {
-    const primerFuturo = PYL.turnosMock.find(t => t.fecha_inicio > hoyStr);
-    if (primerFuturo) {
-      const d = new Date(primerFuturo.fecha_inicio + 'T00:00:00');
-      TurnosState.mesActual  = d.getMonth();
-      TurnosState.anioActual = d.getFullYear();
+    const sig = turnos.find(t => t.fecha_inicio >= hoyStr);
+    if (sig) {
+      const d = new Date(sig.fecha_inicio + 'T00:00:00');
+      mes  = d.getMonth();
+      anio = d.getFullYear();
+      TurnosState.mesActual  = mes;
+      TurnosState.anioActual = anio;
     }
   }
 
-  // Ahora renderizar con los datos reales
-  const turnos  = PYL.turnosMock;
-  const hoy     = new Date(); hoy.setHours(0,0,0,0);
-  const mes     = TurnosState.mesActual;
-  const anio    = TurnosState.anioActual;
+  const mesStrFinal = anio + '-' + String(mes + 1).padStart(2, '0');
+  const delMes      = turnos.filter(t => t.fecha_inicio.startsWith(mesStrFinal));
+  const proximo     = turnos.find(t => t.fecha_fin >= hoyStr);
+  const totalAnio   = turnos.length;
+  const confirmados = turnos.filter(t => t.confirmado).length;
+  const pendientes  = turnos.filter(t => !t.confirmado && t.fecha_inicio >= hoyStr).length;
+  const conReemplazo= turnos.filter(t => t.reemplazante).length;
 
+  // 5. Tarjeta próximo turno
+  let proximoCard = `<div style="background:var(--bg-row-alt);border-radius:var(--r-xl);
+    padding:var(--sp-5);text-align:center;margin-bottom:var(--sp-5);color:var(--text-muted);">
+    No hay turnos próximos programados</div>`;
 
-
-  // Próximo turno
-  const proximo = turnos.find(t => parseFecha(t.fecha_inicio) >= hoy);
-  const diasP   = proximo ? diasHasta(proximo.fecha_inicio) : null;
-
-  // Turnos del mes seleccionado
-  const delMes  = turnos.filter(t => esMesActual(t.fecha_inicio, mes, anio));
-
-  // Stats
-  const totalAnio    = turnos.length;
-  const confirmados  = turnos.filter(t => t.confirmado).length;
-  const pendientes   = turnos.filter(t => !t.confirmado && esFuturo(t.fecha_inicio)).length;
-  const conReemplazo = turnos.filter(t => t.reemplazante).length;
-
-  // Tarjeta próximo turno
-  const proximoCard = proximo ? `
-    <div style="
-      background:linear-gradient(135deg,#0F1923 0%,#1A2B3C 100%);
-      border-radius:var(--r-xl);padding:var(--sp-5) var(--sp-6);
-      color:#fff;display:flex;align-items:center;gap:var(--sp-5);
-      margin-bottom:var(--sp-5);box-shadow:var(--shadow-md);
-    ">
-      <div style="
-        width:64px;height:64px;background:var(--accent);border-radius:var(--r-xl);
-        display:flex;flex-direction:column;align-items:center;justify-content:center;
-        flex-shrink:0;
-      ">
+  if (proximo) {
+    const fi = proximo.fecha_inicio;
+    const ff = proximo.fecha_fin;
+    const diasP = Math.ceil((new Date(fi+'T00:00:00') - hoy) / 86400000);
+    const esHoy = diasP <= 0;
+    proximoCard = `
+    <div style="background:linear-gradient(135deg,#0F1923 0%,#1A2B3C 100%);
+      border-radius:var(--r-xl);padding:var(--sp-5) var(--sp-6);margin-bottom:var(--sp-5);
+      display:flex;align-items:center;gap:var(--sp-5);color:#fff;box-shadow:var(--shadow-md);">
+      <div style="width:64px;height:64px;background:var(--accent);border-radius:var(--r-xl);
+        display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;">
         <div style="font-size:22px;font-weight:800;font-family:var(--font-mono);line-height:1;">
-          ${diasP === 0 ? '¡HOY!' : diasP}
+          ${esHoy ? '¡HOY!' : diasP}
         </div>
-        ${diasP > 0 ? `<div style="font-size:9px;opacity:.8;font-weight:600;">DÍAS</div>` : ''}
+        ${!esHoy ? '<div style="font-size:9px;opacity:.8;font-weight:600;">DÍAS</div>' : ''}
       </div>
       <div style="flex:1;">
-        <div style="font-size:11px;opacity:.5;font-weight:600;letter-spacing:.06em;
-                    text-transform:uppercase;margin-bottom:4px;">Próximo turno</div>
+        <div style="font-size:11px;opacity:.5;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;">Próximo turno</div>
         <div style="font-size:18px;font-weight:700;">${proximo.planificador}</div>
-        <div style="font-size:13px;opacity:.6;margin-top:2px;">
-          ${formatFechaLarga(proximo.fecha_inicio)} — ${formatFechaLarga(proximo.fecha_fin)}
+        <div style="font-size:13px;opacity:.7;margin-top:2px;">
+          ${formatFechaLarga(fi)} — ${formatFechaLarga(ff)}
         </div>
       </div>
       <div style="display:flex;flex-direction:column;gap:var(--sp-2);align-items:flex-end;">
         ${proximo.confirmado
-          ? `<span class="badge" style="background:rgba(16,185,129,.2);color:#10B981;">✓ Confirmado</span>`
-          : `<span class="badge" style="background:rgba(245,158,11,.2);color:#F59E0B;">⏳ Pendiente</span>`
-        }
-        <button class="btn btn-sm btn-secondary"
-                style="font-size:11px;"
-                onclick="abrirModalTurno('${proximo.id}')">
-          Gestionar
-        </button>
+          ? '<span class="badge" style="background:rgba(16,185,129,.2);color:#10B981;">✓ Confirmado</span>'
+          : '<span class="badge" style="background:rgba(245,158,11,.2);color:#F59E0B;">⏳ Pendiente</span>'}
+        <button class="btn btn-sm btn-secondary" onclick="abrirModalTurno('${proximo.id}')">Gestionar</button>
       </div>
-    </div>` : `
-    <div style="background:var(--bg-row-alt);border-radius:var(--r-xl);
-                padding:var(--sp-5);text-align:center;margin-bottom:var(--sp-5);
-                color:var(--text-muted);">
-      No hay turnos próximos programados
     </div>`;
+  }
 
-  // KPIs rápidos
+  // 6. KPIs
   const kpisHtml = `
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:var(--sp-3);margin-bottom:var(--sp-5);">
-      ${[
-        { label:'Total Turnos', value:totalAnio, color:'var(--accent)' },
-        { label:'Confirmados',  value:confirmados, color:'var(--state-op)' },
-        { label:'Pendientes',   value:pendientes,  color:'var(--state-mat)' },
-        { label:'Con reemplazo',value:conReemplazo,color:'var(--state-vac)' },
-      ].map(k => `
-        <div class="card" style="padding:var(--sp-4);text-align:center;">
-          <div style="font-size:28px;font-weight:800;font-family:var(--font-mono);
-                      color:${k.color};">${k.value}</div>
-          <div style="font-size:11px;color:var(--text-muted);font-weight:600;
-                      text-transform:uppercase;letter-spacing:.04em;margin-top:4px;">
-            ${k.label}
-          </div>
-        </div>
-      `).join('')}
-    </div>`;
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:var(--sp-3);margin-bottom:var(--sp-5);">
+    ${[
+      { label:'Total Turnos',  value:totalAnio,    color:'var(--accent)' },
+      { label:'Confirmados',   value:confirmados,  color:'var(--state-op)' },
+      { label:'Pendientes',    value:pendientes,   color:'var(--state-mat)' },
+      { label:'Con reemplazo', value:conReemplazo, color:'var(--state-vac)' },
+    ].map(k => `<div class="card" style="padding:var(--sp-4);text-align:center;">
+      <div style="font-size:28px;font-weight:800;font-family:var(--font-mono);color:${k.color};">${k.value}</div>
+      <div style="font-size:11px;color:var(--text-muted);font-weight:600;text-transform:uppercase;margin-top:4px;">${k.label}</div>
+    </div>`).join('')}
+  </div>`;
 
-  // Navegación de mes
+  // 7. Tabs vista
+  const vistaActual = TurnosState.vista || 'lista';
+  const tabsHtml = ['lista','calendario','historial'].map(v => `
+    <div class="tab ${vistaActual === v ? 'active' : ''}"
+         onclick="cambiarVistaTurnos('${v}')">
+      ${{ lista:'☰ Lista', calendario:'📅 Calendario', historial:'🕐 Historial' }[v]}
+    </div>`).join('');
+
+  // 8. Navegación de mes
   const navMes = `
-    <div style="display:flex;align-items:center;gap:var(--sp-3);margin-bottom:var(--sp-4);">
-      <button class="week-btn" onclick="cambiarMesTurnos(-1)">${ICONS.chevLeft}</button>
-      <div style="font-size:var(--text-md);font-weight:700;min-width:160px;text-align:center;">
-        ${MESES[mes]} ${anio}
-      </div>
-      <button class="week-btn" onclick="cambiarMesTurnos(1)">${ICONS.chevRight}</button>
-      <span style="margin-left:auto;font-size:var(--text-xs);color:var(--text-muted);">
-        ${delMes.length} turnos este mes
-      </span>
-    </div>`;
+  <div style="display:flex;align-items:center;gap:var(--sp-3);">
+    <button class="week-btn" onclick="cambiarMesTurnos(-1)">${ICONS.chevLeft}</button>
+    <div style="font-size:var(--text-md);font-weight:700;min-width:160px;text-align:center;">
+      ${MESES[mes]} ${anio}
+    </div>
+    <button class="week-btn" onclick="cambiarMesTurnos(1)">${ICONS.chevRight}</button>
+    <span style="margin-left:auto;font-size:var(--text-xs);color:var(--text-muted);">
+      ${delMes.length} turno${delMes.length !== 1 ? 's' : ''} este mes
+    </span>
+  </div>`;
 
-  // Lista del mes
-  const listaDelMes = delMes.length ? delMes.map((t, i) => {
-    const pasado   = esPasado(t.fecha_fin);
-    const futuro   = esFuturo(t.fecha_inicio);
-    const dias     = futuro ? diasHasta(t.fecha_inicio) : null;
-    const bgRow    = pasado ? 'opacity:.55;' : '';
+  // 9. Contenido según vista
+  let contenido = '';
 
-    return `
-      <div class="turno-row" style="${bgRow}border-left:3px solid ${
-        t.confirmado ? 'var(--state-op)' : 'var(--state-mat)'};padding-left:var(--sp-4);">
-
-        <!-- Número de orden -->
-        <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);
-                    min-width:24px;text-align:center;">${i+1}</div>
-
-        <!-- Fecha -->
-        <div class="turno-fecha" style="min-width:130px;">
-          <div style="font-weight:700;">${formatFechaCorta(t.fecha_inicio)}</div>
-          <div style="font-size:10px;color:var(--text-muted);">al ${formatFechaCorta(t.fecha_fin)}</div>
+  if (vistaActual === 'calendario') {
+    // Agrupar todos los turnos futuros por mes
+    const mesesMap = {};
+    turnos.filter(t => t.fecha_fin >= hoyStr).forEach(t => {
+      const k = t.fecha_inicio.substring(0,7);
+      if (!mesesMap[k]) mesesMap[k] = [];
+      mesesMap[k].push(t);
+    });
+    contenido = Object.entries(mesesMap).sort().map(([mesK, ts]) => {
+      const [y, m] = mesK.split('-');
+      const nomMes = new Date(+y, +m-1, 1).toLocaleDateString('es-EC',{month:'long',year:'numeric'});
+      return `<div class="card mb-4">
+        <div class="card-header">
+          <div class="card-title" style="text-transform:capitalize;">${nomMes}</div>
+          <span class="badge badge-neutral">${ts.length} turno${ts.length>1?'s':''}</span>
         </div>
-
-        <!-- Planificador -->
-        <div class="turno-planificador" style="flex:1;">
-          ${initBadge(t.iniciales, t.ciudad)}
-          <div>
-            <div class="turno-nombre">${t.planificador}</div>
-            ${t.reemplazante ? `
-              <div style="font-size:11px;color:var(--state-vac);">
-                ↔ Reemplazo: ${t.reemplazante}
-              </div>` : ''}
-          </div>
-        </div>
-
-        <!-- Días restantes -->
-        ${futuro ? `
-          <div style="font-family:var(--font-mono);font-size:12px;font-weight:700;
-                      color:${dias <= 7 ? 'var(--state-det)' : dias <= 14 ? 'var(--state-mat)' : 'var(--text-muted)'};
-                      min-width:70px;text-align:center;">
-            ${dias === 0 ? '¡HOY!' : `en ${dias}d`}
-          </div>` : `
-          <div style="font-size:11px;color:var(--text-muted);min-width:70px;text-align:center;">
-            Realizado
-          </div>`
-        }
-
-        <!-- Estado -->
-        <div style="min-width:100px;">
-          ${t.confirmado
-            ? `<span class="badge badge-op">✓ Confirmado</span>`
-            : `<span class="badge badge-mat">⏳ Pendiente</span>`
-          }
-        </div>
-
-        <!-- Acciones -->
-        <div style="display:flex;gap:var(--sp-2);">
-          <button class="btn btn-ghost btn-sm btn-icon"
-                  onclick="abrirModalTurno('${t.id}')"
-                  title="Gestionar turno" style="font-size:14px;">✎</button>
-          ${!t.confirmado && futuro ? `
-            <button class="btn btn-sm"
-                    style="background:var(--state-op);color:#fff;padding:4px 10px;font-size:11px;"
-                    onclick="confirmarTurno('${t.id}')">
-              Confirmar
-            </button>` : ''}
+        <div class="card-body" style="padding:0;">
+          ${ts.map(t => `<div class="turno-row" style="border-bottom:1px solid var(--border);">
+            <div class="turno-fecha">${formatFechaCorta(t.fecha_inicio)} — ${formatFechaCorta(t.fecha_fin)}</div>
+            <div class="turno-planificador">
+              ${initBadge(t.iniciales, t.ciudad)}
+              <span class="turno-nombre">${t.planificador}</span>
+            </div>
+            <div style="margin-left:auto;">
+              <span class="badge ${t.confirmado?'badge-op':'badge-mat'}">${t.confirmado?'✓ Confirmado':'⏳ Pendiente'}</span>
+            </div>
+          </div>`).join('')}
         </div>
       </div>`;
-  }).join('') : `
-    <div class="empty" style="padding:var(--sp-8);">
-      <div class="empty-title">Sin turnos en ${MESES[mes]}</div>
-      <div class="empty-desc">Usa "Asignar turno" para agregar uno</div>
-    </div>`;
+    }).join('') || '<div class="empty"><div class="empty-title">Sin turnos futuros</div></div>';
 
-  mainT.innerHTML = `
+  } else if (vistaActual === 'historial') {
+    const pasados = turnos.filter(t => t.fecha_fin < hoyStr).reverse();
+    contenido = `<div class="card"><div class="card-body" style="padding:0;">
+      ${pasados.length ? pasados.map((t,i) => `
+        <div class="turno-row" style="opacity:.7;border-bottom:1px solid var(--border);">
+          <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);min-width:20px;">${i+1}</div>
+          <div class="turno-fecha">${formatFechaCorta(t.fecha_inicio)} — ${formatFechaCorta(t.fecha_fin)}</div>
+          <div class="turno-planificador">${initBadge(t.iniciales,t.ciudad)}<span class="turno-nombre">${t.planificador}</span></div>
+          ${t.reemplazante ? `<span style="font-size:11px;color:var(--state-mat);">↔ ${t.reemplazante}</span>` : ''}
+          <span class="badge badge-neutral" style="margin-left:auto;">Realizado</span>
+        </div>`).join('') : '<div class="empty"><div class="empty-title">Sin historial</div></div>'}
+    </div></div>`;
+
+  } else {
+    // Vista lista — turnos del mes seleccionado
+    contenido = `<div class="card"><div class="card-header">${navMes}</div>
+    <div class="card-body" style="padding:var(--sp-2) var(--sp-4);">
+      ${delMes.length ? delMes.map((t,i) => {
+        const esPas = t.fecha_fin < hoyStr;
+        const diasR = Math.ceil((new Date(t.fecha_inicio+'T00:00:00') - hoy) / 86400000);
+        return `<div class="turno-row" style="${esPas?'opacity:.55;':''}border-left:3px solid ${t.confirmado?'var(--state-op)':'var(--state-mat)'};padding-left:var(--sp-3);">
+          <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);min-width:20px;">${i+1}</div>
+          <div class="turno-fecha">
+            <div style="font-weight:700;">${formatFechaCorta(t.fecha_inicio)}</div>
+            <div style="font-size:10px;color:var(--text-muted);">al ${formatFechaCorta(t.fecha_fin)}</div>
+          </div>
+          <div class="turno-planificador">
+            ${initBadge(t.iniciales, t.ciudad)}
+            <div>
+              <div class="turno-nombre">${t.planificador}</div>
+              ${t.reemplazante ? `<div style="font-size:11px;color:var(--state-vac);">↔ Reemplazo: ${t.reemplazante}</div>` : ''}
+            </div>
+          </div>
+          ${!esPas ? `<div style="font-family:var(--font-mono);font-size:12px;font-weight:700;
+            color:${diasR<=7?'var(--state-det)':diasR<=14?'var(--state-mat)':'var(--text-muted)'};
+            min-width:60px;text-align:center;">${diasR===0?'¡HOY!':diasR<0?'Pasado':`en ${diasR}d`}</div>` : ''}
+          <div style="min-width:110px;">${t.confirmado
+            ? '<span class="badge badge-op">✓ Confirmado</span>'
+            : '<span class="badge badge-mat">⏳ Pendiente</span>'}</div>
+          <div style="display:flex;gap:var(--sp-2);">
+            <button class="btn btn-ghost btn-sm btn-icon" onclick="abrirModalTurno('${t.id}')" title="Gestionar">✎</button>
+            ${!esPas && !t.confirmado ? `<button class="btn btn-sm" style="background:var(--state-op);color:#fff;padding:4px 10px;font-size:11px;" onclick="confirmarTurno('${t.id}')">Confirmar</button>` : ''}
+          </div>
+        </div>`;
+      }).join('') : `<div class="empty" style="padding:var(--sp-6);">
+        <div class="empty-title">Sin turnos en ${MESES[mes]}</div>
+        <div class="empty-desc">Usa "Asignar turno" para agregar uno</div>
+      </div>`}
+    </div></div>`;
+  }
+
+  // 10. Renderizar todo
+  main.innerHTML = `
   <div class="section-header">
     <div>
       <div class="section-title">Turnos de Fin de Semana</div>
@@ -1809,32 +1796,30 @@ async function renderTurnos() {
     </div>
     <div style="display:flex;gap:var(--sp-3);">
       <button class="btn btn-secondary btn-sm" onclick="abrirModalRotacion()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-             style="width:14px;height:14px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;">
           <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
           <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
-        </svg>
-        Ver rotación
+        </svg> Ver rotación
       </button>
       <button class="btn btn-primary btn-sm" onclick="abrirModalNuevoTurno()">
         ${ICONS.plus} Asignar turno
       </button>
     </div>
   </div>
-
   ${proximoCard}
   ${kpisHtml}
+  <div class="tabs">${tabsHtml}</div>
+  ${contenido}`;
 
-  <div class="card">
-    <div class="card-header">
-      ${navMes}
-    </div>
-    <div class="card-body" style="padding:var(--sp-3) var(--sp-4);">
-      <div class="turno-list">${listaDelMes}</div>
-    </div>
-  </div>`;
   return '';
 }
+
+// Cambiar vista del módulo turnos
+function cambiarVistaTurnos(vista) {
+  TurnosState.vista = vista;
+  navigate('turnos');
+}
+
 
 
 // ── Datos mock y helpers PYL ────────────────────────────
