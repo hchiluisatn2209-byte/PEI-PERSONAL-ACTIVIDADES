@@ -1660,41 +1660,58 @@ async function renderTurnos() {
   const pendientes  = turnos.filter(t => !t.confirmado && t.fecha_inicio >= hoyStr).length;
   const conReemplazo= turnos.filter(t => t.reemplazante).length;
 
-  // 5. Tarjeta próximo turno
-  let proximoCard = `<div style="background:var(--bg-row-alt);border-radius:var(--r-xl);
-    padding:var(--sp-5);text-align:center;margin-bottom:var(--sp-5);color:var(--text-muted);">
-    No hay turnos próximos programados</div>`;
+  // 5. Tarjeta próximo turno — muestra UNO por equipo si hay varios
+  // Encontrar el próximo turno de cada equipo presente
+  const proximosPorGrupo = {};
+  turnos.forEach(function(t) {
+    const g = t.grupo || 'planificacion';
+    if (t.fecha_fin >= hoyStr && !proximosPorGrupo[g]) {
+      proximosPorGrupo[g] = t;
+    }
+  });
+  const proximos = Object.values(proximosPorGrupo);
 
-  if (proximo) {
-    const fi = proximo.fecha_inicio;
-    const ff = proximo.fecha_fin;
-    const diasP = Math.ceil((new Date(fi+'T00:00:00') - hoy) / 86400000);
-    const esHoy = diasP <= 0;
-    proximoCard = `
-    <div style="background:linear-gradient(135deg,#0F1923 0%,#1A2B3C 100%);
-      border-radius:var(--r-xl);padding:var(--sp-5) var(--sp-6);margin-bottom:var(--sp-5);
-      display:flex;align-items:center;gap:var(--sp-5);color:#fff;box-shadow:var(--shadow-md);">
-      <div style="width:64px;height:64px;background:var(--accent);border-radius:var(--r-xl);
-        display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;">
-        <div style="font-size:22px;font-weight:800;font-family:var(--font-mono);line-height:1;">
-          ${esHoy ? '¡HOY!' : diasP}
-        </div>
-        ${!esHoy ? '<div style="font-size:9px;opacity:.8;font-weight:600;">DÍAS</div>' : ''}
-      </div>
-      <div style="flex:1;">
-        <div style="font-size:11px;opacity:.5;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;">Próximo turno</div>
-        <div style="font-size:18px;font-weight:700;">${proximo.planificador}</div>
-        <div style="font-size:13px;opacity:.7;margin-top:2px;">
-          ${formatFechaLarga(fi)} — ${formatFechaLarga(ff)}
-        </div>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:var(--sp-2);align-items:flex-end;">
-        ${proximo.confirmado
-          ? '<span class="badge" style="background:rgba(16,185,129,.2);color:#10B981;">✓ Confirmado</span>'
-          : '<span class="badge" style="background:rgba(245,158,11,.2);color:#F59E0B;">⏳ Pendiente</span>'}
-        <button class="btn btn-sm btn-secondary" onclick="abrirModalTurno('${proximo.id}')">Gestionar</button>
-      </div>
-    </div>`;
+  function buildProximoCard(turno) {
+    const esTerc = (turno.grupo === 'tercerizado');
+    const col = esTerc
+      ? (turno.confirmado ? '#0891B2' : '#7C3AED')
+      : (turno.confirmado ? 'var(--state-op)' : 'var(--state-mat)');
+    const diasP = Math.ceil((new Date(turno.fecha_inicio+'T00:00:00') - hoy) / 86400000);
+    const esHoyT = diasP <= 0;
+    const etiqueta = esTerc ? '🔧 Tercerizados' : '🗂 Planificación';
+    const confBadge = turno.confirmado
+      ? '<span style="background:rgba(16,185,129,.2);color:#10B981;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700;">✓ Confirmado</span>'
+      : '<span style="background:rgba(245,158,11,.2);color:#F59E0B;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700;">⏳ Pendiente</span>';
+    return '<div style="flex:1;background:linear-gradient(135deg,#0F1923 0%,#1A2B3C 100%);'
+      +'border-radius:var(--r-xl);padding:var(--sp-5) var(--sp-6);'
+      +'display:flex;align-items:center;gap:var(--sp-4);color:#fff;box-shadow:var(--shadow-md);min-width:0;">'
+      +'<div style="width:60px;height:60px;background:'+col+';border-radius:var(--r-xl);'
+      +'display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;">'
+      +'<div style="font-size:'+(esHoyT?'13':'20')+'px;font-weight:800;font-family:var(--font-mono);line-height:1;">'+(esHoyT?'¡HOY!':diasP)+'</div>'
+      +(!esHoyT?'<div style="font-size:9px;opacity:.8;font-weight:600;">DÍAS</div>':'')
+      +'</div>'
+      +'<div style="flex:1;min-width:0;">'
+      +'<div style="font-size:10px;opacity:.5;text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px;">Próximo turno · '+etiqueta+'</div>'
+      +'<div style="font-size:16px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+turno.planificador+'</div>'
+      +'<div style="font-size:12px;opacity:.6;margin-top:2px;">'+formatFechaLarga(turno.fecha_inicio)+' — '+formatFechaLarga(turno.fecha_fin)+'</div>'
+      +'</div>'
+      +'<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;flex-shrink:0;">'
+      +confBadge
+      +'<button class="btn btn-sm btn-secondary" onclick="abrirModalTurno(\''+turno.id+'\',\''+(turno.grupo||'planificacion')+'\')" style="font-size:11px;">Gestionar</button>'
+      +'</div>'
+      +'</div>';
+  }
+
+  let proximoCard;
+  if (proximos.length === 0) {
+    proximoCard = '<div style="background:var(--bg-row-alt);border-radius:var(--r-xl);padding:var(--sp-5);text-align:center;margin-bottom:var(--sp-5);color:var(--text-muted);">No hay turnos próximos programados</div>';
+  } else if (proximos.length === 1) {
+    proximoCard = '<div style="margin-bottom:var(--sp-5);">' + buildProximoCard(proximos[0]) + '</div>';
+  } else {
+    // Múltiples equipos — mostrar uno al lado del otro
+    proximoCard = '<div style="display:flex;gap:var(--sp-4);margin-bottom:var(--sp-5);flex-wrap:wrap;">'
+      + proximos.map(buildProximoCard).join('')
+      + '</div>';
   }
 
   // 6. KPIs
