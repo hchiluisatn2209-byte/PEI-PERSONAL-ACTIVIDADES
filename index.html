@@ -1608,14 +1608,28 @@ async function renderTurnos() {
 
   // Cargar desde Supabase
   const turnosDB = await cargarTurnosSupabase();
+  console.log('Turnos cargados:', turnosDB.length, turnosDB[0]);
+  
   // Actualizar turnosMock con datos reales
-  PYL.turnosMock = turnosDB;
+  PYL.turnosMock = turnosDB.length > 0 ? turnosDB : PYL.turnosMock;
+
+  // Ajustar el mes al primer turno futuro disponible
+  const hoyStr = new Date().toISOString().split('T')[0];
+  const primerFuturo = PYL.turnosMock.find(t => t.fecha_fin >= hoyStr);
+  if (primerFuturo) {
+    const d = new Date(primerFuturo.fecha_inicio + 'T00:00:00');
+    TurnosState.mesActual  = d.getMonth();
+    TurnosState.anioActual = d.getFullYear();
+    console.log('Mes ajustado a:', MESES[TurnosState.mesActual], TurnosState.anioActual);
+  }
 
   // Ahora renderizar con los datos reales
   const turnos  = PYL.turnosMock;
   const hoy     = new Date(); hoy.setHours(0,0,0,0);
   const mes     = TurnosState.mesActual;
   const anio    = TurnosState.anioActual;
+  console.log('renderTurnos: turnos=', turnos.length, 'mes=', mes, 'anio=', anio);
+  if (turnos.length > 0) console.log('primer turno:', turnos[0].fecha_inicio, turnos[0].planificador);
 
   // Próximo turno
   const proximo = turnos.find(t => parseFecha(t.fecha_inicio) >= hoy);
