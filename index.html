@@ -2613,37 +2613,50 @@ function guardarNuevoTurno() {
 // ── Modal ver rotación ──────────────────────────────────────
 function abrirModalRotacion() {
   const overlay = document.getElementById('modalOverlay');
+  const grupo   = TurnosState.grupo || 'planificacion';
   document.getElementById('modalTitleEl').textContent = 'Orden de Rotación';
 
-  // Calcular rotación desde los turnos
-  const vistos = new Set();
-  const orden  = [];
-  PYL.turnosMock.forEach(t => {
-    if (!vistos.has(t.planificador)) {
-      vistos.add(t.planificador);
-      orden.push({ nombre: t.planificador, iniciales: t.iniciales, ciudad: t.ciudad });
-    }
-  });
+  // Función para extraer rotación única de un array de turnos
+  function getRotacion(arr, grupoLabel, color) {
+    const vistos = new Set();
+    const orden  = [];
+    arr.forEach(function(t) {
+      if (!vistos.has(t.planificador)) {
+        vistos.add(t.planificador);
+        orden.push({ nombre:t.planificador, iniciales:t.iniciales, ciudad:t.ciudad });
+      }
+    });
+    let html = '<div style="margin-bottom:12px;">'
+      +'<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;'
+      +'color:'+color+';margin-bottom:8px;padding:6px 10px;background:'+color+'22;border-radius:6px;">'
+      +grupoLabel+'</div>';
+    orden.forEach(function(p, i) {
+      html += '<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);">'
+        +'<div style="font-family:var(--font-mono);font-size:13px;font-weight:700;color:var(--text-muted);min-width:28px;">'+(i+1)+'</div>'
+        +initBadge(p.iniciales, p.ciudad)
+        +'<div style="font-weight:600;font-size:14px;flex:1;">'+p.nombre+'</div>'
+        +'<span class="badge badge-neutral">'+p.ciudad+'</span>'
+        +'</div>';
+    });
+    html += '</div>';
+    return html;
+  }
 
-  document.getElementById('modalBody').innerHTML = `
-    <div style="margin-bottom:var(--sp-4);font-size:var(--text-xs);color:var(--text-muted);
-                background:var(--accent-light);padding:var(--sp-3);border-radius:var(--r-md);">
-      La rotación sigue este orden de manera cíclica. Al llegar al último, 
-      vuelve al primero automáticamente.
-    </div>
-    ${orden.map((p, i) => `
-      <div style="display:flex;align-items:center;gap:var(--sp-3);
-                  padding:var(--sp-3) 0;border-bottom:1px solid var(--border);">
-        <div style="font-family:var(--font-mono);font-size:13px;font-weight:700;
-                    color:var(--text-muted);min-width:28px;">${i + 1}</div>
-        ${initBadge(p.iniciales, p.ciudad)}
-        <div style="font-weight:600;font-size:var(--text-sm);">${p.nombre}</div>
-        <span class="badge badge-neutral" style="margin-left:auto;">${p.ciudad}</span>
-      </div>
-    `).join('')}`;
+  let bodyHtml = '<div style="font-size:12px;color:var(--text-muted);background:var(--accent-light);'
+    +'padding:10px;border-radius:8px;margin-bottom:16px;">'
+    +'La rotación es cíclica — al llegar al último vuelve al primero automáticamente.</div>';
 
-  document.querySelector('.modal-footer').innerHTML = `
-    <button class="btn btn-primary" onclick="closeModal()">Cerrar</button>`;
+  if (grupo === 'todos') {
+    bodyHtml += getRotacion(PYL.turnosMock, '🗂 Equipo Planificación', 'var(--state-op)');
+    bodyHtml += getRotacion(PYL.turnosMockTercerizado||[], '🔧 Equipo Tercerizados', '#7C3AED');
+  } else if (grupo === 'tercerizado') {
+    bodyHtml += getRotacion(PYL.turnosMockTercerizado||[], '🔧 Equipo Tercerizados', '#7C3AED');
+  } else {
+    bodyHtml += getRotacion(PYL.turnosMock, '🗂 Equipo Planificación', 'var(--state-op)');
+  }
+
+  document.getElementById('modalBody').innerHTML = bodyHtml;
+  document.querySelector('.modal-footer').innerHTML = '<button class="btn btn-primary" onclick="closeModal()">Cerrar</button>';
   overlay.classList.add('open');
 }
 
