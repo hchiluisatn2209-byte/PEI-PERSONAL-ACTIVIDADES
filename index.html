@@ -1610,14 +1610,23 @@ async function renderTurnos() {
   // Actualizar turnosMock con datos reales
   PYL.turnosMock = turnosDB.length > 0 ? turnosDB : PYL.turnosMock;
 
-  // Ajustar el mes al primer turno futuro disponible
-  const hoyStr = new Date().toISOString().split('T')[0];
-  const primerFuturo = PYL.turnosMock.find(t => t.fecha_fin >= hoyStr);
-  if (primerFuturo) {
-    const d = new Date(primerFuturo.fecha_inicio + 'T00:00:00');
-    TurnosState.mesActual  = d.getMonth();
-    TurnosState.anioActual = d.getFullYear();
-  
+  // Ajustar mes: usar el mes del sistema, y si no hay turnos, ir al primer turno futuro
+  const hoyDate  = new Date();
+  const hoyStr   = hoyDate.toISOString().split('T')[0];
+  // Iniciar siempre en el mes actual del sistema
+  TurnosState.mesActual  = hoyDate.getMonth();
+  TurnosState.anioActual = hoyDate.getFullYear();
+  // Si no hay turnos en el mes actual, avanzar al mes del primer turno futuro
+  const delMesActual = PYL.turnosMock.filter(t =>
+    t.fecha_inicio.substring(0,7) === hoyDate.getFullYear() + '-' + String(hoyDate.getMonth()+1).padStart(2,'0')
+  );
+  if (delMesActual.length === 0) {
+    const primerFuturo = PYL.turnosMock.find(t => t.fecha_inicio > hoyStr);
+    if (primerFuturo) {
+      const d = new Date(primerFuturo.fecha_inicio + 'T00:00:00');
+      TurnosState.mesActual  = d.getMonth();
+      TurnosState.anioActual = d.getFullYear();
+    }
   }
 
   // Ahora renderizar con los datos reales
