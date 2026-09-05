@@ -3632,18 +3632,20 @@ const moduleTitles = {
 };
 
 function renderModule() {
-  const main = document.getElementById('appMain');
-  const header = document.getElementById('appHeader');
-
   const [title, sub] = moduleTitles[App.modulo] || ['PYL', ''];
-  header.outerHTML = renderHeader(title, sub);
-  // Re-bind header
-  document.getElementById('appHeader');
+
+  // Actualizar header de forma segura
+  const header = document.getElementById('appHeader');
+  if (header) header.outerHTML = renderHeader(title, sub);
+
+  // Re-obtener main DESPUÉS de modificar el header
+  const main = document.getElementById('appMain');
+  if (!main) { console.error('appMain no encontrado'); return; }
 
   const renders = {
     dashboard: renderDashboard,
     planning:  renderPlanning,
-    personal:  renderPersonal,  // async — maneja su propio innerHTML
+    personal:  renderPersonal,
     turnos:    renderTurnos,
     clientes:  renderClientes,
     ts:        renderTS,
@@ -3652,11 +3654,16 @@ function renderModule() {
   };
 
   const fn = renders[App.modulo] || renderDashboard;
-  // Módulos async manejan su propio innerHTML
   const asyncModulos = ['personal', 'dashboard', 'turnos'];
+
+  console.log('renderModule:', App.modulo, '| async:', asyncModulos.includes(App.modulo));
+
   if (asyncModulos.includes(App.modulo)) {
-    main.innerHTML = '';
-    fn();
+    main.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-muted);">Cargando...</div>';
+    fn().catch(e => {
+      console.error('Error en módulo async:', e);
+      main.innerHTML = '<div style="padding:40px;text-align:center;color:var(--state-det);">Error cargando el módulo. Recarga la página.</div>';
+    });
   } else {
     main.innerHTML = fn();
   }
