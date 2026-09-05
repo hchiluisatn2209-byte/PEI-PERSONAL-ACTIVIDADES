@@ -1596,19 +1596,14 @@ async function cargarTurnosSupabase() {
 }
 
 async function renderTurnos() {
-  const main = document.getElementById('appMain');
-  // Mostrar loading
-  main.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;
-    padding:60px;color:var(--text-muted);">
-    <div style="text-align:center;">
-      <div style="font-size:32px;margin-bottom:12px;">⟳</div>
-      <div>Cargando turnos...</div>
-    </div>
-  </div>`;
-
+  console.log('renderTurnos INICIO');
   // Cargar desde Supabase
   const turnosDB = await cargarTurnosSupabase();
   console.log('Turnos cargados:', turnosDB.length, turnosDB[0]);
+  
+  // Re-obtener main DESPUÉS del await (puede haber cambiado)
+  const mainT = document.getElementById('appMain');
+  if (!mainT) { console.error('appMain perdido tras await'); return; }
   
   // Actualizar turnosMock con datos reales
   PYL.turnosMock = turnosDB.length > 0 ? turnosDB : PYL.turnosMock;
@@ -1793,7 +1788,7 @@ async function renderTurnos() {
       <div class="empty-desc">Usa "Asignar turno" para agregar uno</div>
     </div>`;
 
-  main.innerHTML = `
+  mainT.innerHTML = `
   <div class="section-header">
     <div>
       <div class="section-title">Turnos de Fin de Semana</div>
