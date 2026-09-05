@@ -1751,6 +1751,72 @@ function renderTurnos() {
 }
 
 
+// ── Datos mock y helpers PYL ────────────────────────────
+PYL.kpis = {
+  totalColaboradores: 16,
+  personalOperativo:  14,
+  enMaternidad:        2,
+  enVacaciones:        0,
+  turnosSemana:        2,
+  solicitudesPendientes: 3,
+  clientesActivos:    24,
+  actividadesDetenidas: 5,
+  actividadesReplanificadas: 3,
+  tsActivas: 16,
+};
+
+PYL.columnaTareas = [
+  { key:'base_ots',    label:'BASE OTS',      abbr:'OTS'  },
+  { key:'base_tareas', label:'BASE TAREAS',   abbr:'TAR'  },
+  { key:'envio_prog',  label:'ENVIO PROG.',   abbr:'ENV'  },
+  { key:'asig_proy',   label:'ASIG. PROY.',   abbr:'PRO'  },
+  { key:'formato',     label:'FMT DIARIO',    abbr:'FMT'  },
+  { key:'barrido',     label:'BARRIDO BASE',  abbr:'BAR'  },
+  { key:'resumen',     label:'RESUMEN PEND.', abbr:'RES'  },
+  { key:'fiscalizador',label:'FISCALIZADOR',  abbr:'FIS'  },
+  { key:'notif_nl',    label:'NOTIF NL',      abbr:'NTF'  },
+];
+
+PYL.grupos = [
+  { id:'PROY_CRM',    label:'Proyectos CRM',                    color:'#9C27B0', dot:'#9C27B0' },
+  { id:'OTS_MASIVAS', label:'OTS / Tareas / Proyectos Masivas', color:'#2196F3', dot:'#2196F3' },
+  { id:'TERCERIZADOS',label:'Tercerizados',                     color:'#FF9800', dot:'#FF9800' },
+];
+
+PYL.getCityClass = (ciudad) => {
+  const map = { UIO:'city-uio', GYE:'city-gye', MIL:'city-mil' };
+  return map[ciudad] || 'city-other';
+};
+
+PYL.getDisponibilidadBadge = (disp) => {
+  const map = {
+    operativo:       { cls:'badge-op',      label:'Operativo'    },
+    maternidad:      { cls:'badge-mat',     label:'Maternidad'   },
+    lactancia:       { cls:'badge-mat',     label:'Lactancia'    },
+    vacaciones:      { cls:'badge-vac',     label:'Vacaciones'   },
+    descanso_medico: { cls:'badge-med',     label:'Desc. Médico' },
+    permiso:         { cls:'badge-neutral', label:'Permiso'      },
+  };
+  return map[disp] || { cls:'badge-neutral', label: disp || 'Operativo' };
+};
+
+PYL.getRowClass = (disp) => {
+  const map = {
+    maternidad:      'row-maternidad',
+    lactancia:       'row-maternidad',
+    vacaciones:      'row-vacaciones',
+    descanso_medico: 'row-medico',
+  };
+  return map[disp] || '';
+};
+
+PYL.formatDate = (dateStr) => {
+  if (!dateStr) return '';
+  const d = new Date(dateStr + 'T00:00:00');
+  return d.toLocaleDateString('es-EC', { day:'2-digit', month:'short' });
+};
+
+
 // ── Estado global ─────────────────────────────────────────
 const App = {
   semanaIdx:    1,
