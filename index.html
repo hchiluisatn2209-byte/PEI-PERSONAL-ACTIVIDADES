@@ -2507,15 +2507,31 @@ function renderTurnos() {
   return buildTurnosHTML(vista);
 }
 
+// Adaptar turnosMock al formato que usa buildTurnosHTML
+function getTurnosData() {
+  return (PYL.turnosMock || []).map(t => ({
+    id:           t.id,
+    fecha_ini:    t.fecha_inicio,
+    fecha_fin:    t.fecha_fin,
+    fecha_label:  formatFechaCorta(t.fecha_inicio) + ' - ' + formatFechaCorta(t.fecha_fin),
+    planificador: t.planificador,
+    iniciales:    t.iniciales,
+    ciudad:       t.ciudad,
+    tipo:         'Fin de semana',
+    confirmado:   t.confirmado,
+    reemplazante: t.reemplazante || null,
+  }));
+}
+
 function buildTurnosHTML(vista) {
   App.vistaTurnos = vista;
   const hoy   = new Date();
   const hoyStr = hoy.toISOString().split('T')[0];
 
   // Separar turnos: próximos y pasados
-  const proximos  = PYL.turnosData.filter(t => t.fecha_fin >= hoyStr)
+  const proximos  = getTurnosData().filter(t => t.fecha_fin >= hoyStr)
                       .sort((a,b) => a.fecha_ini.localeCompare(b.fecha_ini));
-  const pasados   = PYL.turnosData.filter(t => t.fecha_fin < hoyStr)
+  const pasados   = getTurnosData().filter(t => t.fecha_fin < hoyStr)
                       .sort((a,b) => b.fecha_ini.localeCompare(a.fecha_ini));
 
   // Próximo turno destacado
@@ -2579,10 +2595,10 @@ function buildTurnosHTML(vista) {
   const statsHtml = `
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:var(--sp-3);margin-bottom:var(--sp-5);">
       ${[
-        { label:'Turnos este año',  value: PYL.turnosData.length,    color:'var(--accent)' },
+        { label:'Turnos este año',  value: getTurnosData().length,    color:'var(--accent)' },
         { label:'Próximos',         value: proximos.length,           color:'var(--state-op)' },
         { label:'Realizados',       value: pasados.length,            color:'var(--text-muted)' },
-        { label:'Con reemplazo',    value: PYL.turnosData.filter(t=>t.reemplazante).length, color:'var(--state-mat)' },
+        { label:'Con reemplazo',    value: getTurnosData().filter(t=>t.reemplazante).length, color:'var(--state-mat)' },
       ].map(s => `
         <div class="card" style="padding:var(--sp-4);text-align:center;">
           <div style="font-size:24px;font-weight:800;font-family:var(--font-mono);color:${s.color};">
@@ -2746,7 +2762,7 @@ function guardarReemplazo(turnoId) {
   const reemplazante = document.getElementById('reemplazanteSelect')?.value;
   if (!reemplazante) { showToast('Selecciona quién cubre el turno', 'error'); return; }
   // Actualizar en datos mock (en producción: UPDATE rrhh.turnos)
-  const turno = PYL.turnosData.find(t => t.id === turnoId);
+  const turno = getTurnosData().find(t => t.id === turnoId);
   if (turno) turno.reemplazante = reemplazante;
   closeModal();
   showToast(`Reemplazo registrado: ${reemplazante}`, 'success');
@@ -2754,7 +2770,7 @@ function guardarReemplazo(turnoId) {
 }
 
 function openModalEditarTurno(turnoId) {
-  const t = PYL.turnosData.find(x => x.id === turnoId);
+  const t = getTurnosData().find(x => x.id === turnoId);
   if (!t) return;
   const overlay = document.getElementById('modalOverlay');
   document.getElementById('modalTitleEl').textContent = 'Editar Turno';
@@ -2806,7 +2822,7 @@ function openModalEditarTurno(turnoId) {
 }
 
 function guardarEdicionTurno(turnoId) {
-  const t = PYL.turnosData.find(x => x.id === turnoId);
+  const t = getTurnosData().find(x => x.id === turnoId);
   if (!t) return;
   t.planificador = document.getElementById('editPlanificador')?.value || t.planificador;
   t.fecha_ini    = document.getElementById('editFechaIni')?.value    || t.fecha_ini;
@@ -2824,7 +2840,7 @@ function guardarEdicionTurno(turnoId) {
 }
 
 function eliminarTurno(turnoId) {
-  PYL.turnosData = PYL.turnosData.filter(t => t.id !== turnoId);
+  getTurnosData() = getTurnosData().filter(t => t.id !== turnoId);
   closeModal();
   showToast('Turno eliminado', 'success');
   renderModule();
@@ -2903,7 +2919,7 @@ function guardarNuevoTurno() {
   });
   const inic = colab?.iniciales || plan.substring(0,2).toUpperCase();
 
-  PYL.turnosData.push({
+  getTurnosData().push({
     id:          'T' + Date.now(),
     planificador: plan,
     iniciales:   inic,
