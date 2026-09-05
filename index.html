@@ -1550,35 +1550,48 @@ const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
 
 async function cargarTurnosSupabase() {
   try {
-    const hoy = new Date();
-    hoy.setMonth(hoy.getMonth() - 2); // 2 meses atrás
+    // Query 1: turnos básicos
     const { data: turnos, error } = await supabaseClient
       .schema('rrhh')
       .from('turnos')
-      .select(`
-        id, fecha_inicio, fecha_fin, confirmado,
-        colaborador:colaboradores(apellidos, nombres, iniciales),
-        ciudad:ciudades(codigo, nombre)
-      `)
-      .gte('fecha_inicio', hoy.toISOString().split('T')[0])
+      .select('id, fecha_inicio, fecha_fin, confirmado, colaborador_id, ciudad_id')
       .order('fecha_inicio');
 
     if (error) throw error;
+    if (!turnos || turnos.length === 0) return PYL.turnosMock;
 
-    // Convertir al formato de PYL.turnosMock
-    return (turnos || []).map(t => ({
-      id:           t.id,
-      fecha_inicio: t.fecha_inicio,
-      fecha_fin:    t.fecha_fin,
-      planificador: ((t.colaborador?.apellidos||'') + ' ' + (t.colaborador?.nombres||'')).trim(),
-      iniciales:    t.colaborador?.iniciales || '??',
-      ciudad:       t.ciudad?.codigo || 'UIO',
-      confirmado:   t.confirmado,
-      reemplazante: null,
-    }));
+    // Query 2: colaboradores
+    const { data: colabs } = await supabaseClient
+      .schema('rrhh')
+      .from('colaboradores')
+      .select('id, apellidos, nombres, iniciales');
+
+    // Query 3: ciudades
+    const { data: ciudades } = await supabaseClient
+      .schema('rrhh')
+      .from('ciudades')
+      .select('id, codigo, nombre');
+
+    const colabMap  = Object.fromEntries((colabs  ||[]).map(c => [c.id, c]));
+    const ciudadMap = Object.fromEntries((ciudades ||[]).map(c => [c.id, c]));
+
+    return turnos.map(t => {
+      const c  = colabMap[t.colaborador_id]  || {};
+      const ci = ciudadMap[t.ciudad_id]      || {};
+      return {
+        id:           t.id,
+        fecha_inicio: t.fecha_inicio,
+        fecha_fin:    t.fecha_fin,
+        planificador: ((c.apellidos||'') + ' ' + (c.nombres||'')).trim() || 'Sin asignar',
+        iniciales:    c.iniciales || '??',
+        ciudad:       ci.codigo   || 'UIO',
+        confirmado:   t.confirmado,
+        reemplazante: null,
+      };
+    });
   } catch(err) {
     console.error('Error cargando turnos:', err);
-    return PYL.turnosMock; // fallback a datos mock
+    return PYL.turnosMock;
   }
 }
 
