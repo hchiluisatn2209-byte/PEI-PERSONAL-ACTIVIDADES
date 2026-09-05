@@ -1761,14 +1761,23 @@ async function renderTurnos() {
     if (inicioOffset < 0) inicioOffset = 6;
     const DIAS_HDR = ['LUN','MAR','MIÉ','JUE','VIE','SÁB','DOM'];
 
-    // Índice turno por día
+    // Índice turno por día — permite MÚLTIPLES turnos por día (array)
     const turnosPorDia = {};
     turnos.forEach(function(t) {
+      // Día 1 del turno (sábado)
       const p1 = t.fecha_inicio.split('-').map(Number);
-      if (p1[1]-1 === calMes && p1[0] === calAnio) turnosPorDia[p1[2]] = t;
+      if (p1[1]-1 === calMes && p1[0] === calAnio) {
+        if (!turnosPorDia[p1[2]]) turnosPorDia[p1[2]] = [];
+        turnosPorDia[p1[2]].push(t);
+      }
+      // Día 2 del turno (domingo) — mismo turno continúa
       const p2 = t.fecha_fin.split('-').map(Number);
-      if (p2[1]-1 === calMes && p2[0] === calAnio && !turnosPorDia[p2[2]])
-        turnosPorDia[p2[2]] = Object.assign({}, t, { esDia2:true });
+      if (p2[1]-1 === calMes && p2[0] === calAnio) {
+        if (!turnosPorDia[p2[2]]) turnosPorDia[p2[2]] = [];
+        // Solo agregar si no está ya (evitar duplicado si inicio y fin mismo mes)
+        const yaEsta = turnosPorDia[p2[2]].some(function(x){ return x.id === t.id; });
+        if (!yaEsta) turnosPorDia[p2[2]].push(Object.assign({}, t, { esDia2:true }));
+      }
     });
 
     // Headers días semana
@@ -1789,11 +1798,11 @@ async function renderTurnos() {
       const esFinde=(dow===6||dow===0);
       const esHoyC=(d===todayD&&calMes===todayM&&calAnio===todayY);
       const esPasD=new Date(calAnio,calMes,d)<hoy;
-      const turno=turnosPorDia[d];
+      const turnosDelDia=turnosPorDia[d]||[];
       const bgC=esHoyC?'var(--accent-light)':esFinde?'#F7F9FF':'var(--bg-card)';
       const opC=(esPasD&&!esHoyC)?'opacity:.65;':'';
       let th='';
-      if (turno) {
+      turnosDelDia.forEach(function(turno) {
         const esTerc=(turno.grupo==='tercerizado');
         const col=esTerc?'#7C3AED':(turno.confirmado?'var(--state-op)':'var(--state-mat)');
         const bgT=esTerc?'#F5F3FF':(turno.confirmado?'var(--state-op-bg)':'var(--state-mat-bg)');
@@ -1805,14 +1814,15 @@ async function renderTurnos() {
         const eqLabel=(grupo==='todos')?(esTerc?'🔧 Terc.':'🗂 Plan.'):'';
         const eqHtml=eqLabel?('<div style="font-size:9px;color:'+col+';font-weight:700;margin-top:1px;">'+eqLabel+'</div>'):'';
         const onclk='abrirModalTurno("'+turno.id+'","'+gv+'")';
-        th='<div style="margin-top:4px;background:'+bgT+';border-left:3px solid '+col+';border-radius:6px;padding:5px 7px;cursor:pointer;'+op2+'" onclick="'+onclk+'">'
+        const thItem='<div style="margin-top:4px;background:'+bgT+';border-left:3px solid '+col+';border-radius:6px;padding:5px 7px;cursor:pointer;'+op2+'" onclick="'+onclk+'">'
           +'<div style="display:flex;align-items:center;gap:4px;">'
           +'<div class="initials-badge '+cc+'" style="width:20px;height:20px;font-size:8px;flex-shrink:0;">'+turno.iniciales+'</div>'
           +'<div style="min-width:0;flex:1;">'
           +'<div style="font-size:11px;font-weight:700;color:'+col+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+nmCorto+'</div>'
           +eqHtml
           +'</div></div></div>';
-      }
+        th += thItem;
+      }); // fin forEach turnosDelDia
       celdasHtml+='<div style="min-height:90px;border:1px solid var(--border);padding:6px;background:'+bgC+';'+opC+'position:relative;">'
         +'<div style="width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:'+(esHoyC?'800':'600')+';background:'+(esHoyC?'var(--accent)':'transparent')+';color:'+(esHoyC?'#fff':'var(--text-primary)')+';">'+d+'</div>'
         +th+'</div>';
