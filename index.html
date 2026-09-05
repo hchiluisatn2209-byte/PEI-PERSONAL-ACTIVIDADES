@@ -1816,7 +1816,13 @@ async function renderTurnos() {
       const esHoyC=(d===todayD&&calMes===todayM&&calAnio===todayY);
       const esPasD=new Date(calAnio,calMes,d)<hoy;
       const turnosDelDia=turnosPorDia[d]||[];
-      const bgC=esHoyC?'var(--accent-light)':esFinde?'#F7F9FF':'var(--bg-card)';
+      // Verificar si es feriado
+      const fechaStr2 = calAnio+'-'+String(calMes+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+      const esFeriado = PYL.feriadosEcuador && PYL.feriadosEcuador[fechaStr2];
+      const bgC = esHoyC ? 'var(--accent-light)'
+                : esFeriado ? '#FEF9C3'
+                : esFinde   ? '#F7F9FF'
+                : 'var(--bg-card)';
       const opC=(esPasD&&!esHoyC)?'opacity:.65;':'';
       let th='';
       turnosDelDia.forEach(function(turno) {
@@ -1845,8 +1851,17 @@ async function renderTurnos() {
           +'</div></div></div>';
         th += thItem;
       }); // fin forEach turnosDelDia
-      celdasHtml+='<div style="min-height:90px;border:1px solid var(--border);padding:6px;background:'+bgC+';'+opC+'position:relative;">'
-        +'<div style="width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:'+(esHoyC?'800':'600')+';background:'+(esHoyC?'var(--accent)':'transparent')+';color:'+(esHoyC?'#fff':'var(--text-primary)')+';">'+d+'</div>'
+      // Etiqueta de feriado
+      const feriadoHtml = esFeriado
+        ? '<div style="font-size:9px;font-weight:700;color:#854D0E;background:#FEF08A;'
+          +'border-radius:3px;padding:1px 4px;margin-top:3px;white-space:nowrap;'
+          +'overflow:hidden;text-overflow:ellipsis;max-width:100%;">🇪🇨 '+esFeriado+'</div>'
+        : '';
+      // Borde especial si es feriado
+      const borderFer = esFeriado ? 'border-top:3px solid #EAB308;' : '';
+      celdasHtml+='<div style="min-height:90px;border:1px solid var(--border);'+borderFer+'padding:6px;background:'+bgC+';'+opC+'position:relative;">'
+        +'<div style="width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:'+(esHoyC?'800':'600')+';background:'+(esHoyC?'var(--accent)':esFeriado?'#EAB308':'transparent')+';color:'+(esHoyC?'#fff':esFeriado?'#fff':'var(--text-primary)')+';">'+d+'</div>'
+        +feriadoHtml
         +th+'</div>';
     }
     const tot=inicioOffset+diasEnMes;
@@ -1860,6 +1875,7 @@ async function renderTurnos() {
       +'<div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text-secondary);"><div style="width:12px;height:12px;border-radius:3px;background:var(--state-mat-bg);border-left:3px solid var(--state-mat);"></div> 🗂 Plan. Pendiente</div>'
       +'<div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text-secondary);"><div style="width:12px;height:12px;border-radius:3px;background:#ECFEFF;border-left:3px solid #0891B2;"></div> 🔧 Terc. Confirmado</div>'
       +'<div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text-secondary);"><div style="width:12px;height:12px;border-radius:3px;background:#F5F3FF;border-left:3px solid #7C3AED;"></div> 🔧 Terc. Pendiente</div>'
+      +'<div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text-secondary);"><div style="width:16px;height:12px;border-radius:3px;background:#FEF9C3;border-top:3px solid #EAB308;"></div> 🇪🇨 Feriado</div>'
       +'</div>';
 
     contenido='<div class="card">'
@@ -2068,6 +2084,26 @@ const ICONS = {
 // ── DOM helpers ───────────────────────────────────────────
 const $ = (sel, ctx = document) => ctx.querySelector(sel);
 const $$ = (sel, ctx = document) => [...ctx.querySelectorAll(sel)];
+
+// ── Feriados Ecuador 2026 ────────────────────────────────
+PYL.feriadosEcuador = {
+  '2026-01-01': 'Año Nuevo',
+  '2026-02-16': 'Carnaval',
+  '2026-02-17': 'Carnaval',
+  '2026-04-02': 'Viernes Santo',
+  '2026-04-03': 'Sábado Santo',
+  '2026-05-01': 'Día del Trabajo',
+  '2026-05-24': 'Batalla de Pichincha',
+  '2026-08-10': 'Primer Grito de Independencia',
+  '2026-10-09': 'Independencia de Guayaquil',
+  '2026-11-02': 'Día de los Difuntos',
+  '2026-11-03': 'Independencia de Cuenca',
+  '2026-12-25': 'Navidad',
+  // Traslados y puentes frecuentes
+  '2026-08-13': 'Puente Pichincha',
+  '2026-11-27': 'Fundación de Quito',
+};
+
 
 // -- Personal Supabase --
 async function cargarColaboradoresSupabase() {
