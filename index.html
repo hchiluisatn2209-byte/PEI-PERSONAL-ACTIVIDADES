@@ -1605,6 +1605,17 @@ async function renderTurnos() {
   const mainT = document.getElementById('appMain');
   if (!mainT) { console.error('appMain perdido tras await'); return; }
   
+  // Debug: verificar el mes calculado
+  const hoyDebug = new Date().toISOString().split('T')[0];
+  const primerDebug = PYL.turnosMock.find(t => t.fecha_fin >= hoyDebug);
+  console.log('hoy:', hoyDebug, '| primerFuturo:', primerDebug?.fecha_inicio, '| mesState:', TurnosState.mesActual, TurnosState.anioActual);
+  const delMesDebug = PYL.turnosMock.filter(t => esMesActual(t.fecha_inicio, TurnosState.mesActual, TurnosState.anioActual));
+  console.log('Turnos del mes actual:', delMesDebug.length, delMesDebug.map(t => t.fecha_inicio));
+  
+  // Re-obtener main DESPUÉS del await (puede haber cambiado)
+  const mainT = document.getElementById('appMain');
+  if (!mainT) { console.error('appMain perdido tras await'); return; }
+  
   // Actualizar turnosMock con datos reales
   PYL.turnosMock = turnosDB.length > 0 ? turnosDB : PYL.turnosMock;
 
