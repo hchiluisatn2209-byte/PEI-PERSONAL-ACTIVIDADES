@@ -2576,11 +2576,7 @@ function renderPersonalLista(colaboradores) {
 
 
 // ── Turnos ────────────────────────────────────────────────
-function renderTurnos() {
-  // Vista: 'calendario' o 'lista' o 'historial'
-  const vista = App.vistaTurnos || 'lista';
-  return buildTurnosHTML(vista);
-}
+// renderTurnos (versión antigua eliminada — usar la async de arriba)
 
 // Adaptar turnosMock al formato que usa buildTurnosHTML
 function getTurnosData() {
