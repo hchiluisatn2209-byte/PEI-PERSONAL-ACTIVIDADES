@@ -2213,9 +2213,11 @@ function verDetalleColaborador(id) {
       +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">'
       +'<span style="font-size:16px;">'+info.icon+'</span>'
       +'<span style="font-size:12px;font-weight:700;color:'+info.color+';text-transform:uppercase;letter-spacing:.04em;">'+info.label+'</span>'
-      +'<span style="margin-left:auto;font-size:11px;color:var(--text-muted);">'+lista.length+' backup'+(lista.length!==1?'s':'')+'</span>'
+      +'<span id="bkCnt_'+tipo+'_'+id+'" style="margin-left:auto;font-size:11px;color:var(--text-muted);">'+lista.length+' backup'+(lista.length!==1?'s':'')+'</span>'
       +'</div>'
+      +'<div id="bkLista_'+tipo+'_'+id+'">'
       +(items || '<div style="font-size:12px;color:var(--text-muted);font-style:italic;padding:4px 0;">Sin backups asignados</div>')
+      +'</div>'
       +addForm
       +'</div>';
   }
@@ -2255,26 +2257,63 @@ function agregarBackup(colaboradorId, tipo) {
   const colabId = sel.value;
   const colab   = (window._colaboradoresCache||[]).find(x => x.id === colabId);
   if (!colab) return;
-  if (!window._backupsData[colaboradorId]) window._backupsData[colaboradorId] = { general:[], ts:[], clientes:[], proyectos:[] };
+  if (!window._backupsData[colaboradorId]) {
+    window._backupsData[colaboradorId] = { general:[], ts:[], clientes:[], proyectos:[] };
+  }
   const lista = window._backupsData[colaboradorId][tipo];
   if (lista.some(x => x.id === colabId)) { showToast('Ya está en la lista', 'error'); return; }
   lista.push(colab);
-  showToast('Backup agregado', 'success');
-  verDetalleColaborador(colaboradorId); // re-render modal
+
+  // Actualizar solo la lista del DOM sin cerrar el modal
+  const nombre   = ((colab.apellidos||'')+' '+(colab.nombres||'')).trim();
+  const ini      = colab.iniciales || nombre.substring(0,2).toUpperCase();
+  const ciudad   = colab.ciudad?.codigo || 'UIO';
+  const idx      = lista.length - 1;
+  const listaDom = document.getElementById('bkLista_'+tipo+'_'+colaboradorId);
+  if (listaDom) {
+    const item = document.createElement('div');
+    item.id = 'bkItem_'+tipo+'_'+idx;
+    item.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);';
+    item.innerHTML = '<div style="width:20px;height:20px;background:var(--border);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--text-muted);flex-shrink:0;">'+(idx+1)+'</div>'
+      + initBadge(ini, ciudad)
+      + '<span style="flex:1;font-size:13px;font-weight:500;">'+nombre+'</span>'
+      + '<button onclick="quitarBackup(\"'+colaboradorId+'\",\"'+tipo+'\",'+idx+')" style="background:none;border:none;color:var(--state-det);cursor:pointer;font-size:16px;padding:0 4px;" title="Quitar">×</button>';
+    listaDom.appendChild(item);
+  }
+
+  // Actualizar contador
+  const cntDom = document.getElementById('bkCnt_'+tipo+'_'+colaboradorId);
+  if (cntDom) cntDom.textContent = lista.length + ' backup' + (lista.length!==1?'s':'');
+
+  // Resetear selector
+  sel.value = '';
+  showToast(nombre + ' agregado como backup', 'success');
 }
 
 function quitarBackup(colaboradorId, tipo, idx) {
   if (!window._backupsData[colaboradorId]) return;
-  window._backupsData[colaboradorId][tipo].splice(idx, 1);
-  showToast('Backup eliminado', 'success');
+  const lista = window._backupsData[colaboradorId][tipo];
+  const nombre = ((lista[idx]?.apellidos||'')+' '+(lista[idx]?.nombres||'')).trim() || 'Backup';
+  lista.splice(idx, 1);
+  showToast(nombre + ' removido', 'success');
+  // Re-render solo si es necesario (para actualizar números de posición)
   verDetalleColaborador(colaboradorId);
 }
 
 function guardarBackups(colaboradorId) {
   const backups = window._backupsData[colaboradorId] || {};
-  const total   = Object.values(backups).flat().length;
+  const total   = Object.values(backups).reduce(function(acc, arr) { return acc + arr.length; }, 0);
+  if (total === 0) {
+    showToast('No hay backups asignados aún', 'warning');
+    return; // No cerrar si no hay nada guardado
+  }
+  // Resumen por tipo
+  const resumen = Object.entries(backups)
+    .filter(function(e){ return e[1].length > 0; })
+    .map(function(e){ return e[1].length + ' en ' + {general:'General',ts:'TS',clientes:'Clientes',proyectos:'Proyectos'}[e[0]]; })
+    .join(', ');
   // TODO: guardar en Supabase → rrhh.colaborador_backups
-  showToast('Backups guardados (' + total + ' asignados)', 'success');
+  showToast('✓ Backups guardados: ' + resumen, 'success');
   closeModal();
 }
 
