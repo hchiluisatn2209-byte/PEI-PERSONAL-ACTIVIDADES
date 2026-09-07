@@ -2154,27 +2154,130 @@ function renderPersonalCard(c) {
   </div>`;
 }
 
+// ── Gestión de Backups ───────────────────────────────────
+// Almacenamiento en memoria (reemplazar con Supabase cuando se conecte)
+window._backupsData = window._backupsData || {};
+
 function verDetalleColaborador(id) {
   const c = (window._colaboradoresCache||[]).find(x => x.id===id);
   if (!c) return;
+
   const nombre = ((c.apellidos||'')+' '+(c.nombres||'')).trim();
-  document.getElementById('modalTitleEl').textContent = nombre;
-  document.getElementById('modalBody').innerHTML = `
-    <div style="display:flex;flex-direction:column;gap:var(--sp-3);">
-      <div class="form-row">
-        <div><span class="form-label">Username</span><div style="font-family:var(--font-mono);font-size:13px;">@${c.username||'--'}</div></div>
-        <div><span class="form-label">Codigo</span><div style="font-family:var(--font-mono);font-size:13px;">${c.codigo_empleado||'--'}</div></div>
-      </div>
-      <div><span class="form-label">Correo</span><div style="font-size:13px;">${c.correo_corporativo||'--'}</div></div>
-      <div><span class="form-label">Gmail</span><div style="font-size:13px;">${c.gmail_empresa||'--'}</div></div>
-      <div class="form-row">
-        <div><span class="form-label">Celular</span><div style="font-size:13px;">${c.celular||'--'}</div></div>
-        <div><span class="form-label">Ciudad</span><div style="font-size:13px;">${c.ciudad?.nombre||'--'}</div></div>
-      </div>
-    </div>`;
-  document.querySelector('.modal-footer').innerHTML = `<button class="btn btn-secondary" onclick="closeModal()">Cerrar</button>`;
+  const esCoord = (window.CURRENT_USER?.role === 'coordinador' || window.CURRENT_USER?.role === 'admin');
+  const backups = window._backupsData[id] || { general:[], ts:[], clientes:[], proyectos:[] };
+
+  const actividadesMap = {
+    general:   { label:'General', icon:'👤', color:'var(--accent)' },
+    ts:        { label:'TS / Técnica Sucursal', icon:'📍', color:'var(--state-op)' },
+    clientes:  { label:'Clientes Nacionales', icon:'🏢', color:'#7C3AED' },
+    proyectos: { label:'Proyectos / CRM', icon:'📋', color:'var(--state-mat)' },
+  };
+
+  function renderBackupGrupo(tipo) {
+    const info   = actividadesMap[tipo];
+    const lista  = backups[tipo] || [];
+    const colabs = (window._colaboradoresCache||[]).filter(x => x.id !== id);
+
+    const items = lista.map((bk, i) => {
+      const bkNombre = ((bk.apellidos||'')+' '+(bk.nombres||'')).trim() || bk.nombre || 'Desconocido';
+      const bkIni    = bk.iniciales || bkNombre.substring(0,2).toUpperCase();
+      const bkCiudad = bk.ciudad?.codigo || 'UIO';
+      return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;'
+        +'border-bottom:1px solid var(--border);">'
+        +'<div style="width:20px;height:20px;background:var(--border);border-radius:50%;'
+        +'display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;'
+        +'color:var(--text-muted);flex-shrink:0;">'+(i+1)+'</div>'
+        +initBadge(bkIni, bkCiudad)
+        +'<span style="flex:1;font-size:13px;font-weight:500;">'+bkNombre+'</span>'
+        +(esCoord ? '<button onclick="quitarBackup(\''+id+'\',\''+tipo+'\','+i+')" '
+          +'style="background:none;border:none;color:var(--state-det);cursor:pointer;'
+          +'font-size:16px;padding:0 4px;" title="Quitar backup">×</button>' : '')
+        +'</div>';
+    }).join('');
+
+    const selectorOpciones = colabs.map(x => {
+      const xNombre = ((x.apellidos||'')+' '+(x.nombres||'')).trim();
+      return '<option value="'+x.id+'">'+xNombre+'</option>';
+    }).join('');
+
+    const addForm = esCoord ? '<div style="display:flex;gap:8px;margin-top:8px;">'
+      +'<select id="bkSel_'+tipo+'" class="form-select" style="flex:1;font-size:12px;">'
+      +'<option value="">— Seleccionar colaborador —</option>'
+      +selectorOpciones
+      +'</select>'
+      +'<button onclick="agregarBackup(\''+id+'\',\''+tipo+'\')" '
+      +'class="btn btn-primary btn-sm" style="flex-shrink:0;">+ Agregar</button>'
+      +'</div>' : '';
+
+    return '<div style="background:var(--bg-row-alt);border-radius:8px;padding:12px;margin-bottom:12px;">'
+      +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">'
+      +'<span style="font-size:16px;">'+info.icon+'</span>'
+      +'<span style="font-size:12px;font-weight:700;color:'+info.color+';text-transform:uppercase;letter-spacing:.04em;">'+info.label+'</span>'
+      +'<span style="margin-left:auto;font-size:11px;color:var(--text-muted);">'+lista.length+' backup'+(lista.length!==1?'s':'')+'</span>'
+      +'</div>'
+      +(items || '<div style="font-size:12px;color:var(--text-muted);font-style:italic;padding:4px 0;">Sin backups asignados</div>')
+      +addForm
+      +'</div>';
+  }
+
+  document.getElementById('modalTitleEl').innerHTML = nombre
+    +'<span style="font-size:12px;font-weight:400;color:var(--text-muted);margin-left:8px;">'
+    +((c.cargo?.nombre||''))+'</span>';
+
+  document.getElementById('modalBody').innerHTML =
+    // Info básica colapsada
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;'
+    +'background:var(--bg-row-alt);padding:12px;border-radius:8px;">'
+    +'<div><span class="form-label">Ciudad</span><div style="font-size:13px;">'+(c.ciudad?.nombre||'—')+'</div></div>'
+    +'<div><span class="form-label">Username</span><div style="font-size:13px;font-family:var(--font-mono);">@'+(c.username||'—')+'</div></div>'
+    +'<div><span class="form-label">Celular</span><div style="font-size:13px;">'+(c.celular||'—')+'</div></div>'
+    +'<div><span class="form-label">Gmail</span><div style="font-size:11px;overflow:hidden;text-overflow:ellipsis;">'+(c.gmail_empresa||'—')+'</div></div>'
+    +'</div>'
+    // Sección backups
+    +'<div style="font-size:13px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px;">'
+    +'<span>🔄 Gestión de Backups</span>'
+    +(esCoord?'<span style="font-size:11px;font-weight:400;color:var(--state-op);">● Puedes editar</span>':'<span style="font-size:11px;font-weight:400;color:var(--text-muted);">Solo lectura</span>')
+    +'</div>'
+    + Object.keys(actividadesMap).map(renderBackupGrupo).join('');
+
+  // Footer con guardar
+  document.querySelector('.modal-footer').innerHTML = esCoord
+    ? '<button class="btn btn-secondary" onclick="closeModal()">Cerrar</button>'
+      +'<button class="btn btn-primary" onclick="guardarBackups(\''+id+'\')">💾 Guardar backups</button>'
+    : '<button class="btn btn-primary" onclick="closeModal()">Cerrar</button>';
+
   document.getElementById('modalOverlay').classList.add('open');
 }
+
+function agregarBackup(colaboradorId, tipo) {
+  const sel = document.getElementById('bkSel_' + tipo);
+  if (!sel || !sel.value) { showToast('Selecciona un colaborador', 'error'); return; }
+  const colabId = sel.value;
+  const colab   = (window._colaboradoresCache||[]).find(x => x.id === colabId);
+  if (!colab) return;
+  if (!window._backupsData[colaboradorId]) window._backupsData[colaboradorId] = { general:[], ts:[], clientes:[], proyectos:[] };
+  const lista = window._backupsData[colaboradorId][tipo];
+  if (lista.some(x => x.id === colabId)) { showToast('Ya está en la lista', 'error'); return; }
+  lista.push(colab);
+  showToast('Backup agregado', 'success');
+  verDetalleColaborador(colaboradorId); // re-render modal
+}
+
+function quitarBackup(colaboradorId, tipo, idx) {
+  if (!window._backupsData[colaboradorId]) return;
+  window._backupsData[colaboradorId][tipo].splice(idx, 1);
+  showToast('Backup eliminado', 'success');
+  verDetalleColaborador(colaboradorId);
+}
+
+function guardarBackups(colaboradorId) {
+  const backups = window._backupsData[colaboradorId] || {};
+  const total   = Object.values(backups).flat().length;
+  // TODO: guardar en Supabase → rrhh.colaborador_backups
+  showToast('Backups guardados (' + total + ' asignados)', 'success');
+  closeModal();
+}
+
 
 async function renderPersonal() {
   const main = document.getElementById('appMain');
