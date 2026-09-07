@@ -2183,12 +2183,15 @@ function renderBackupsCard(colaboradorId) {
       const nombre = ((bk.apellidos||'')+' '+(bk.nombres||'')).trim();
       const ini    = bk.iniciales || nombre.substring(0,2).toUpperCase();
       const ciudad = bk.ciudad?.codigo || 'UIO';
-      const primerApellido = (bk.apellidos||'').split(' ')[0] || bk.nombres?.split(' ')[0] || ini;
-      return '<span style="display:inline-flex;align-items:center;gap:3px;margin-right:6px;'
-        +'background:var(--bg-row-alt);border-radius:12px;padding:1px 6px 1px 1px;border:1px solid var(--border);">'
-        + '<span class="initials-badge '+PYL.getCityClass(ciudad)+'" style="width:16px;height:16px;font-size:7px;">'+ini+'</span>'
-        + '<span style="font-size:10px;font-weight:600;color:var(--text-secondary);">BK'+(i+1)+'</span>'
-        + '<span style="font-size:10px;color:var(--text-primary);font-weight:500;">'+primerApellido+'</span>'
+      // Nombre completo: primer apellido + primer nombre
+      const ap1    = (bk.apellidos||'').split(' ')[0];
+      const nom1   = (bk.nombres||'').split(' ')[0];
+      const nombreCorto = (ap1 && nom1) ? ap1+' '+nom1 : ap1||nom1||ini;
+      return '<span style="display:inline-flex;align-items:center;gap:4px;margin-right:6px;margin-bottom:3px;'
+        +'background:var(--bg-row-alt);border-radius:12px;padding:2px 8px 2px 2px;border:1px solid var(--border);">'
+        + '<span class="initials-badge '+PYL.getCityClass(ciudad)+'" style="width:18px;height:18px;font-size:7px;flex-shrink:0;">'+ini+'</span>'
+        + '<span style="font-size:11px;font-weight:600;color:var(--accent);">BK'+(i+1)+'</span>'
+        + '<span style="font-size:11px;color:var(--text-primary);font-weight:500;">'+nombreCorto+'</span>'
         + '</span>';
     }).join('');
     html += '</div>';
