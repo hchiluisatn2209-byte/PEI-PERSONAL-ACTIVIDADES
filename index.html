@@ -2150,6 +2150,9 @@ function renderPersonalCard(c) {
     <div class="personal-card-footer">
       <span class="badge badge-neutral" style="font-size:10px;">${c.codigo_empleado||'S/C'}</span>
       ${da && dt!=='operativo' ? `<span style="font-size:10px;color:var(--state-mat);">Hasta: ${da.fecha_fin ? new Date(da.fecha_fin+'T00:00:00').toLocaleDateString('es-EC',{day:'2-digit',month:'short'}) : 'Indefinido'}</span>` : ''}
+        </div>
+        ${renderBackupsCard(c.id)}
+      </div>
     </div>
   </div>`;
 }
@@ -2157,6 +2160,40 @@ function renderPersonalCard(c) {
 // ── Gestión de Backups ───────────────────────────────────
 // Almacenamiento en memoria (reemplazar con Supabase cuando se conecte)
 window._backupsData = window._backupsData || {};
+
+// Renderiza los backups en la card de personal
+function renderBackupsCard(colaboradorId) {
+  const backups = window._backupsData && window._backupsData[colaboradorId];
+  if (!backups) return '<div style="font-size:10px;color:var(--text-muted);font-style:italic;">Sin backups asignados</div>';
+
+  const total = Object.values(backups).reduce(function(a,b){ return a+b.length; }, 0);
+  if (total === 0) return '<div style="font-size:10px;color:var(--text-muted);font-style:italic;">Sin backups asignados</div>';
+
+  const iconos = { general:'👤', ts:'📍', clientes:'🏢', proyectos:'📋' };
+  const labels = { general:'General', ts:'TS', clientes:'Clientes', proyectos:'Proyectos' };
+  let html = '<div style="border-top:1px solid var(--border);padding-top:6px;">';
+  html += '<div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;">Backups asignados</div>';
+
+  Object.entries(backups).forEach(function(entry) {
+    const tipo = entry[0], lista = entry[1];
+    if (!lista.length) return;
+    html += '<div style="margin-bottom:3px;">';
+    html += '<span style="font-size:10px;color:var(--text-muted);">'+iconos[tipo]+' '+labels[tipo]+': </span>';
+    html += lista.map(function(bk, i) {
+      const nombre = ((bk.apellidos||'')+' '+(bk.nombres||'')).trim();
+      const ini    = bk.iniciales || nombre.substring(0,2).toUpperCase();
+      const ciudad = bk.ciudad?.codigo || 'UIO';
+      return '<span style="display:inline-flex;align-items:center;gap:3px;margin-right:4px;">'
+        + '<span class="initials-badge '+PYL.getCityClass(ciudad)+'" style="width:16px;height:16px;font-size:7px;">'+ini+'</span>'
+        + '<span style="font-size:10px;font-weight:600;">BK'+(i+1)+'</span>'
+        + '</span>';
+    }).join('');
+    html += '</div>';
+  });
+
+  html += '</div>';
+  return html;
+}
 
 function verDetalleColaborador(id) {
   const c = (window._colaboradoresCache||[]).find(x => x.id===id);
@@ -2315,6 +2352,12 @@ function guardarBackups(colaboradorId) {
   // TODO: guardar en Supabase → rrhh.colaborador_backups
   showToast('✓ Backups guardados: ' + resumen, 'success');
   closeModal();
+  // Re-renderizar las cards para mostrar los backups actualizados
+  const grid = document.querySelector('.personal-grid');
+  if (grid) {
+    const colabs = window._colaboradoresCache || [];
+    grid.innerHTML = colabs.map(renderPersonalCard).join('');
+  }
 }
 
 
