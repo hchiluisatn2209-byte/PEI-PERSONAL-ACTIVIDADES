@@ -2358,12 +2358,8 @@ function guardarBackups(colaboradorId) {
   // TODO: guardar en Supabase → rrhh.colaborador_backups
   showToast('✓ Backups guardados: ' + resumen, 'success');
   closeModal();
-  // Re-renderizar las cards para mostrar los backups actualizados
-  const grid = document.querySelector('.personal-grid');
-  if (grid) {
-    const colabs = window._colaboradoresCache || [];
-    grid.innerHTML = colabs.map(renderPersonalCard).join('');
-  }
+  // NO re-renderizar el grid — closeModal no navega, las cards se actualizan
+  // solo cuando el usuario vuelva al módulo Personal
 }
 
 
@@ -2892,24 +2888,8 @@ function abrirModalRotacion() {
 // ── Vista Personal — Toggle tarjetas/lista ──────────────────
 function cambiarVista(vista) {
   App.vistaPersonal = vista;
-  const colaboradores = window._colaboradoresCache || [];
-  const cards = colaboradores.map(renderPersonalCard).join('');
-
-  document.querySelectorAll('.view-toggle-btn').forEach(btn => {
-    const onclk = btn.getAttribute('onclick') || '';
-    btn.classList.toggle('active', onclk.includes(vista));
-  });
-
-  const contenedorGrid = document.querySelector('.personal-grid');
-  const contenedorLista = document.querySelector('.personal-list');
-  const parent = (contenedorGrid || contenedorLista)?.parentElement;
-  if (parent) {
-    const nuevo = vista === 'lista'
-      ? renderPersonalLista(colaboradores)
-      : `<div class="personal-grid">${cards}</div>`;
-    const lastChild = parent.lastElementChild;
-    if (lastChild) lastChild.outerHTML = nuevo;
-  }
+  // Re-renderizar el módulo completo para evitar contenido duplicado
+  navigate('personal');
 }
 
 function renderPersonalLista(colaboradores) {
