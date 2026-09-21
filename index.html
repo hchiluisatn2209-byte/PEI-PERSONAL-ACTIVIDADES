@@ -2249,8 +2249,24 @@ function verDetalleColaborador(id) {
     +'<span style="font-size:12px;font-weight:400;color:var(--text-muted);margin-left:8px;">'
     +((c.cargo?.nombre||''))+'</span>';
 
+  // Estado actual del colaborador
+  const hoyModal = new Date().toISOString().split('T')[0];
+  const dispsModal = window._disponibilidadesCache || [];
+  const dispActual = dispsModal.find(d => d.colaborador_id===id && d.fecha_inicio<=hoyModal && (!d.fecha_fin||d.fecha_fin>=hoyModal) && d.activo);
+  const estadoActual = dispActual ? dispActual.tipo : 'operativo';
+  const badgeActual = PYL.getDisponibilidadBadge(estadoActual);
+
+  const estadosOpciones = [
+    { val:'operativo',  label:'Operativo',          color:'var(--state-op)' },
+    { val:'maternidad', label:'Maternidad',          color:'var(--state-mat)' },
+    { val:'lactancia',  label:'Lactancia',           color:'var(--state-mat)' },
+    { val:'vacaciones', label:'Vacaciones',          color:'var(--state-vac)' },
+    { val:'medico',     label:'Permiso médico',      color:'var(--state-med)' },
+    { val:'detenida',   label:'Detenida/Inactiva',   color:'var(--state-det)' },
+  ].map(e => `<option value="${e.val}" ${e.val===estadoActual?'selected':''}>${e.label}</option>`).join('');
+
   document.getElementById('modalBody').innerHTML =
-    // Info básica colapsada
+    // Info básica
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;'
     +'background:var(--bg-row-alt);padding:12px;border-radius:8px;">'
     +'<div><span class="form-label">Ciudad</span><div style="font-size:13px;">'+(c.ciudad?.nombre||'—')+'</div></div>'
@@ -2258,17 +2274,51 @@ function verDetalleColaborador(id) {
     +'<div><span class="form-label">Celular</span><div style="font-size:13px;">'+(c.celular||'—')+'</div></div>'
     +'<div><span class="form-label">Gmail</span><div style="font-size:11px;overflow:hidden;text-overflow:ellipsis;">'+(c.gmail_empresa||'—')+'</div></div>'
     +'</div>'
-    // Sección backups
+
+    // ── Sección Estado / Disponibilidad ──
+    +(esCoord ? (
+      '<div style="background:var(--bg-row-alt);border-radius:8px;padding:14px;margin-bottom:16px;border:1px solid var(--border);">'
+      +'<div style="font-size:13px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px;">'
+      +'<span>🔘 Estado del colaborador</span>'
+      +'<span class="badge '+badgeActual.cls+'" style="margin-left:auto;">Actual: '+badgeActual.label+'</span>'
+      +'</div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">'
+      +'<div><label class="form-label">Nuevo estado</label>'
+      +'<select id="estadoSelect_'+id+'" class="form-select" style="width:100%;" onchange="toggleFechaFin(\''+id+'\')">'
+      +estadosOpciones
+      +'</select></div>'
+      +'<div><label class="form-label">Fecha inicio</label>'
+      +'<input type="date" id="estadoFechaInicio_'+id+'" class="form-input" style="width:100%;border:1px solid var(--border);border-radius:var(--r-md);padding:6px 10px;" value="'+hoyModal+'"></div>'
+      +'</div>'
+      +'<div id="fechaFinRow_'+id+'" style="margin-bottom:10px;'+(estadoActual==='operativo'?'display:none;':'')+'">'
+      +'<label class="form-label">Fecha fin <span style="color:var(--text-muted);font-weight:400;">(opcional — dejar vacío si es indefinido)</span></label>'
+      +'<input type="date" id="estadoFechaFin_'+id+'" class="form-input" style="width:100%;border:1px solid var(--border);border-radius:var(--r-md);padding:6px 10px;" value="'+(dispActual?.fecha_fin||'')+'">'
+      +'</div>'
+      +'<div><label class="form-label">Observación <span style="color:var(--text-muted);font-weight:400;">(opcional)</span></label>'
+      +'<input type="text" id="estadoObs_'+id+'" class="form-input" style="width:100%;border:1px solid var(--border);border-radius:var(--r-md);padding:6px 10px;" placeholder="Ej: Permiso desde RRHH, regresa el 15 jun..." value="'+(dispActual?.observacion||'')+'">'
+      +'</div>'
+      +'</div>'
+    ) : (
+      '<div style="margin-bottom:16px;display:flex;align-items:center;gap:8px;">'
+      +'<span style="font-size:13px;color:var(--text-muted);">Estado actual:</span>'
+      +'<span class="badge '+badgeActual.cls+'">'+badgeActual.label+'</span>'
+      +'</div>'
+    ))
+
+    // ── Sección Backups ──
     +'<div style="font-size:13px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px;">'
     +'<span>🔄 Gestión de Backups</span>'
     +(esCoord?'<span style="font-size:11px;font-weight:400;color:var(--state-op);">● Puedes editar</span>':'<span style="font-size:11px;font-weight:400;color:var(--text-muted);">Solo lectura</span>')
     +'</div>'
     + Object.keys(actividadesMap).map(renderBackupGrupo).join('');
 
-  // Footer con guardar
+  // Footer
   document.querySelector('.modal-footer').innerHTML = esCoord
     ? '<button class="btn btn-secondary" onclick="closeModal()">Cerrar</button>'
+      +'<div style="display:flex;gap:8px;">'
+      +'<button class="btn btn-secondary" style="border-color:var(--state-det);color:var(--state-det);" onclick="cambiarEstadoColaborador(\''+id+'\')">💾 Guardar estado</button>'
       +'<button class="btn btn-primary" onclick="guardarBackups(\''+id+'\')">💾 Guardar backups</button>'
+      +'</div>'
     : '<button class="btn btn-primary" onclick="closeModal()">Cerrar</button>';
 
   document.getElementById('modalOverlay').classList.add('open');
@@ -2321,6 +2371,81 @@ function quitarBackup(colaboradorId, tipo, idx) {
   showToast(nombre + ' removido', 'success');
   // Re-render solo si es necesario (para actualizar números de posición)
   verDetalleColaborador(colaboradorId);
+}
+
+// ── Toggle fecha fin según estado seleccionado ────────────
+function toggleFechaFin(id) {
+  const sel = document.getElementById('estadoSelect_' + id);
+  const row = document.getElementById('fechaFinRow_' + id);
+  if (!sel || !row) return;
+  row.style.display = sel.value === 'operativo' ? 'none' : 'block';
+}
+
+// ── Cambiar estado / disponibilidad del colaborador ───────
+async function cambiarEstadoColaborador(id) {
+  const sel        = document.getElementById('estadoSelect_' + id);
+  const fechaIni   = document.getElementById('estadoFechaInicio_' + id);
+  const fechaFin   = document.getElementById('estadoFechaFin_' + id);
+  const obsInput   = document.getElementById('estadoObs_' + id);
+  if (!sel) return;
+
+  const nuevoEstado = sel.value;
+  const fi          = fechaIni?.value || new Date().toISOString().split('T')[0];
+  const ff          = fechaFin?.value || null;
+  const obs         = obsInput?.value || null;
+
+  const badgeInfo = PYL.getDisponibilidadBadge(nuevoEstado);
+
+  try {
+    // 1. Desactivar disponibilidad anterior activa
+    const { error: errUpd } = await supabaseClient
+      .from('disponibilidades')
+      .update({ activo: false })
+      .eq('colaborador_id', id)
+      .eq('activo', true);
+    if (errUpd) throw errUpd;
+
+    // 2. Insertar nueva disponibilidad (solo si no es operativo: lo operativo es el estado base)
+    if (nuevoEstado !== 'operativo') {
+      const { error: errIns } = await supabaseClient
+        .from('disponibilidades')
+        .insert({
+          colaborador_id: id,
+          tipo:           nuevoEstado,
+          fecha_inicio:   fi,
+          fecha_fin:      ff || null,
+          observacion:    obs || null,
+          activo:         true,
+        });
+      if (errIns) throw errIns;
+    }
+
+    // 3. Actualizar caché local
+    const cache = window._disponibilidadesCache || [];
+    const sinEste = cache.filter(d => d.colaborador_id !== id || !d.activo);
+    if (nuevoEstado !== 'operativo') {
+      sinEste.push({ colaborador_id: id, tipo: nuevoEstado, fecha_inicio: fi, fecha_fin: ff, activo: true, observacion: obs });
+    }
+    window._disponibilidadesCache = sinEste;
+
+    showToast('Estado actualizado: ' + badgeInfo.label, 'success');
+    closeModal();
+    // Refrescar la vista
+    setTimeout(() => navigate('personal'), 300);
+
+  } catch (e) {
+    console.error('Error al cambiar estado:', e);
+    // Fallback: actualizar solo en memoria si no hay tabla en Supabase aún
+    const cache = window._disponibilidadesCache || [];
+    const sinEste = cache.filter(d => !(d.colaborador_id === id && d.activo));
+    if (nuevoEstado !== 'operativo') {
+      sinEste.push({ colaborador_id: id, tipo: nuevoEstado, fecha_inicio: fi, fecha_fin: ff, activo: true, observacion: obs });
+    }
+    window._disponibilidadesCache = sinEste;
+    showToast('Estado actualizado localmente: ' + badgeInfo.label, 'success');
+    closeModal();
+    setTimeout(() => navigate('personal'), 300);
+  }
 }
 
 function guardarBackups(colaboradorId) {
