@@ -2001,14 +2001,17 @@ PYL.getCityClass = (ciudad) => {
 
 PYL.getDisponibilidadBadge = (disp) => {
   const map = {
-    operativo:       { cls:'badge-op',      label:'Operativo'    },
-    maternidad:      { cls:'badge-mat',     label:'Maternidad'   },
-    lactancia:       { cls:'badge-mat',     label:'Lactancia'    },
-    vacaciones:      { cls:'badge-vac',     label:'Vacaciones'   },
-    descanso_medico: { cls:'badge-med',     label:'Desc. Médico' },
-    permiso:         { cls:'badge-neutral', label:'Permiso'      },
+    operativo:       { cls:'badge-op',  label:'Operativo'  },
+    maternidad:      { cls:'badge-mat', label:'Maternidad' },
+    lactancia:       { cls:'badge-mat', label:'Lactancia'  },
+    vacaciones:      { cls:'badge-vac', label:'Vacaciones' },
+    descanso_medico: { cls:'badge-med', label:'Médico'     },
+    medico:          { cls:'badge-med', label:'Médico'     },
+    permiso:         { cls:'badge-neutral', label:'Permiso' },
+    detenida:        { cls:'badge-det', label:'Inactivo'   },
+    inactivo:        { cls:'badge-det', label:'Inactivo'   },
   };
-  return map[disp] || { cls:'badge-neutral', label: disp || 'Operativo' };
+  return map[disp] || { cls:'badge-op', label:'Operativo' };
 };
 
 PYL.getRowClass = (disp) => {
@@ -2255,15 +2258,15 @@ function verDetalleColaborador(id) {
   const dispActual = dispsModal.find(d => d.colaborador_id===id && d.fecha_inicio<=hoyModal && (!d.fecha_fin||d.fecha_fin>=hoyModal) && d.activo);
   const estadoActual = dispActual ? dispActual.tipo : 'operativo';
   const badgeActual = PYL.getDisponibilidadBadge(estadoActual);
+  const estadoNormLabel = estadoActual === 'operativo' ? 'Operativo' : 'Inactivo';
+
+  // Normalizar: cualquier valor no-operativo se muestra como inactivo
+  const estadoNorm = estadoActual === 'operativo' ? 'operativo' : 'inactivo';
 
   const estadosOpciones = [
-    { val:'operativo',  label:'Operativo',          color:'var(--state-op)' },
-    { val:'maternidad', label:'Maternidad',          color:'var(--state-mat)' },
-    { val:'lactancia',  label:'Lactancia',           color:'var(--state-mat)' },
-    { val:'vacaciones', label:'Vacaciones',          color:'var(--state-vac)' },
-    { val:'medico',     label:'Permiso médico',      color:'var(--state-med)' },
-    { val:'detenida',   label:'Detenida/Inactiva',   color:'var(--state-det)' },
-  ].map(e => `<option value="${e.val}" ${e.val===estadoActual?'selected':''}>${e.label}</option>`).join('');
+    { val:'operativo', label:'Operativo' },
+    { val:'inactivo',  label:'Inactivo'  },
+  ].map(e => `<option value="${e.val}" ${e.val===estadoNorm?'selected':''}>${e.label}</option>`).join('');
 
   document.getElementById('modalBody').innerHTML =
     // Info básica
@@ -2290,7 +2293,7 @@ function verDetalleColaborador(id) {
       +'<div><label class="form-label">Fecha inicio</label>'
       +'<input type="date" id="estadoFechaInicio_'+id+'" class="form-input" style="width:100%;border:1px solid var(--border);border-radius:var(--r-md);padding:6px 10px;" value="'+hoyModal+'"></div>'
       +'</div>'
-      +'<div id="fechaFinRow_'+id+'" style="margin-bottom:10px;'+(estadoActual==='operativo'?'display:none;':'')+'">'
+      +'<div id="fechaFinRow_'+id+'" style="margin-bottom:10px;display:none;">'
       +'<label class="form-label">Fecha fin <span style="color:var(--text-muted);font-weight:400;">(opcional — dejar vacío si es indefinido)</span></label>'
       +'<input type="date" id="estadoFechaFin_'+id+'" class="form-input" style="width:100%;border:1px solid var(--border);border-radius:var(--r-md);padding:6px 10px;" value="'+(dispActual?.fecha_fin||'')+'">'
       +'</div>'
@@ -2375,10 +2378,7 @@ function quitarBackup(colaboradorId, tipo, idx) {
 
 // ── Toggle fecha fin según estado seleccionado ────────────
 function toggleFechaFin(id) {
-  const sel = document.getElementById('estadoSelect_' + id);
-  const row = document.getElementById('fechaFinRow_' + id);
-  if (!sel || !row) return;
-  row.style.display = sel.value === 'operativo' ? 'none' : 'block';
+  // Solo Operativo / Inactivo — sin necesidad de mostrar fecha fin
 }
 
 // ── Recargar caché de disponibilidades desde Supabase ─────
@@ -2424,7 +2424,7 @@ async function cambiarEstadoColaborador(id) {
         .schema('rrhh').from('disponibilidades')
         .insert({
           colaborador_id: id,
-          tipo:           nuevoEstado,
+          tipo:           nuevoEstado === 'inactivo' ? 'detenida' : nuevoEstado,
           fecha_inicio:   fi,
           fecha_fin:      ff || null,
           descripcion:    obs || null,
@@ -2454,7 +2454,7 @@ async function cambiarEstadoColaborador(id) {
     if (nuevoEstado !== 'operativo') {
       sinEste.push({
         colaborador_id: id,
-        tipo:           nuevoEstado,
+        tipo:           nuevoEstado === 'inactivo' ? 'detenida' : nuevoEstado,
         fecha_inicio:   fi,
         fecha_fin:      ff,
         activo:         true,
