@@ -2468,23 +2468,78 @@ async function cambiarEstadoColaborador(id) {
   }
 }
 
-function guardarBackups(colaboradorId) {
+async function guardarBackups(colaboradorId) {
   const backups = window._backupsData[colaboradorId] || {};
   const total   = Object.values(backups).reduce(function(acc, arr) { return acc + arr.length; }, 0);
-  if (total === 0) {
-    showToast('No hay backups asignados aún', 'warning');
-    return; // No cerrar si no hay nada guardado
+
+  showToast('Guardando backups...', 'default');
+
+  try {
+    // 1. Eliminar backups anteriores de este colaborador
+    const { error: errDel } = await supabaseClient
+      .schema('rrhh').from('colaborador_backups')
+      .delete()
+      .eq('colaborador_id', colaboradorId);
+    if (errDel) throw new Error('DELETE: ' + errDel.message);
+
+    // 2. Insertar los nuevos
+    const filas = [];
+    Object.entries(backups).forEach(function(entry) {
+      const tipo = entry[0], lista = entry[1];
+      lista.forEach(function(bk) {
+        filas.push({ colaborador_id: colaboradorId, backup_id: bk.id, tipo: tipo });
+      });
+    });
+
+    if (filas.length > 0) {
+      const { error: errIns } = await supabaseClient
+        .schema('rrhh').from('colaborador_backups')
+        .insert(filas);
+      if (errIns) throw new Error('INSERT: ' + errIns.message);
+    }
+
+    // 3. Recargar backups y re-renderizar
+    await cargarBackupsSupabase();
+    closeModal();
+    const resumen = Object.entries(backups)
+      .filter(function(e){ return e[1].length > 0; })
+      .map(function(e){ return e[1].length + ' en ' + {general:'General',ts:'TS',clientes:'Clientes',proyectos:'Proyectos'}[e[0]]; })
+      .join(', ');
+    showToast('✅ Backups guardados: ' + (resumen || 'ninguno'), 'success');
+    await renderPersonal();
+
+  } catch(e) {
+    console.error('Error guardando backups:', e);
+    showToast('❌ ' + e.message, 'error');
+    // Fallback: mantener en memoria y re-renderizar igual
+    closeModal();
+    await renderPersonal();
   }
-  // Resumen por tipo
-  const resumen = Object.entries(backups)
-    .filter(function(e){ return e[1].length > 0; })
-    .map(function(e){ return e[1].length + ' en ' + {general:'General',ts:'TS',clientes:'Clientes',proyectos:'Proyectos'}[e[0]]; })
-    .join(', ');
-  // TODO: guardar en Supabase → rrhh.colaborador_backups
-  showToast('✓ Backups guardados: ' + resumen, 'success');
-  closeModal();
-  // NO re-renderizar el grid — closeModal no navega, las cards se actualizan
-  // solo cuando el usuario vuelva al módulo Personal
+}
+
+// ── Cargar backups desde Supabase ─────────────────────────
+async function cargarBackupsSupabase() {
+  try {
+    const { data, error } = await supabaseClient
+      .schema('rrhh').from('colaborador_backups')
+      .select('colaborador_id, backup_id, tipo');
+    if (error) throw error;
+
+    // Reconstruir window._backupsData
+    window._backupsData = {};
+    const colabs = window._colaboradoresCache || [];
+    (data || []).forEach(function(row) {
+      if (!window._backupsData[row.colaborador_id]) {
+        window._backupsData[row.colaborador_id] = { general:[], ts:[], clientes:[], proyectos:[] };
+      }
+      const bkColab = colabs.find(c => c.id === row.backup_id);
+      if (bkColab) {
+        window._backupsData[row.colaborador_id][row.tipo].push(bkColab);
+      }
+    });
+  } catch(e) {
+    console.warn('No se pudo cargar backups desde Supabase:', e.message);
+  }
 }
 
 
@@ -2493,6 +2548,7 @@ async function renderPersonal() {
   main.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;padding:60px;color:var(--text-muted);"><div style="text-align:center;"><div style="font-size:32px;margin-bottom:12px;">&#8635;</div><div>Cargando equipo...</div></div></div>';
   const colaboradores = await cargarColaboradoresSupabase();
   window._colaboradoresCache = colaboradores;
+  await cargarBackupsSupabase();
   const hoy = new Date().toISOString().split('T')[0];
   const dc = window._disponibilidadesCache || [];
   const total = colaboradores.length;
