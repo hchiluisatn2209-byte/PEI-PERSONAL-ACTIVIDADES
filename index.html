@@ -803,7 +803,8 @@ ul { list-style: none; }
 /* ── Módulo Personal ─────────────────────────────────────── */
 .personal-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  align-items: start;
   gap: var(--sp-4);
 }
 .personal-card {
@@ -2131,10 +2132,8 @@ function renderPersonalCard(c) {
     <div class="personal-card-footer">
       <span class="badge badge-neutral" style="font-size:10px;">${c.codigo_empleado||'S/C'}</span>
       ${da && dt!=='operativo' ? `<span style="font-size:10px;color:var(--state-mat);">Hasta: ${da.fecha_fin ? new Date(da.fecha_fin+'T00:00:00').toLocaleDateString('es-EC',{day:'2-digit',month:'short'}) : 'Indefinido'}</span>` : ''}
-        </div>
-        ${renderBackupsCard(c.id)}
-      </div>
     </div>
+    ${renderBackupsCard(c.id)}
   </div>`;
 }
 
