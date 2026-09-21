@@ -2409,16 +2409,18 @@ async function cambiarEstadoColaborador(id) {
 
   try {
     // 1. Desactivar disponibilidad anterior activa
-    const { error: errUpd } = await supabaseClient
+    const { error: errUpd, data: dataUpd } = await supabaseClient
       .schema('rrhh').from('disponibilidades')
       .update({ activo: false })
       .eq('colaborador_id', id)
-      .eq('activo', true);
-    if (errUpd) throw errUpd;
+      .eq('activo', true)
+      .select();
+    console.log('UPDATE result:', JSON.stringify(dataUpd), JSON.stringify(errUpd));
+    if (errUpd) throw new Error('UPDATE: ' + (errUpd.message || errUpd.details || JSON.stringify(errUpd)));
 
     // 2. Insertar nueva (solo si no es operativo)
     if (nuevoEstado !== 'operativo') {
-      const { error: errIns } = await supabaseClient
+      const { error: errIns, data: dataIns } = await supabaseClient
         .schema('rrhh').from('disponibilidades')
         .insert({
           colaborador_id: id,
@@ -2427,8 +2429,10 @@ async function cambiarEstadoColaborador(id) {
           fecha_fin:      ff || null,
           descripcion:    obs || null,
           activo:         true,
-        });
-      if (errIns) throw errIns;
+        })
+        .select();
+      console.log('INSERT result:', JSON.stringify(dataIns), JSON.stringify(errIns));
+      if (errIns) throw new Error('INSERT: ' + (errIns.message || errIns.details || JSON.stringify(errIns)));
     }
 
     // 3. Recargar caché fresco desde Supabase y re-renderizar
@@ -2439,6 +2443,10 @@ async function cambiarEstadoColaborador(id) {
 
   } catch (e) {
     console.error('Error al cambiar estado:', e);
+
+    // Mostrar error exacto en pantalla para diagnóstico
+    const msgError = e?.message || e?.details || e?.hint || JSON.stringify(e) || 'Error desconocido';
+    showToast('❌ ' + msgError, 'error');
 
     // Fallback: actualizar solo en memoria
     const cache = window._disponibilidadesCache || [];
@@ -2455,7 +2463,7 @@ async function cambiarEstadoColaborador(id) {
     }
     window._disponibilidadesCache = sinEste;
     closeModal();
-    showToast('⚠️ Guardado localmente (sin conexión a BD): ' + badgeInfo.label, 'success');
+    showToast('⚠️ Guardado localmente: ' + badgeInfo.label, 'success');
     await renderPersonal();
   }
 }
