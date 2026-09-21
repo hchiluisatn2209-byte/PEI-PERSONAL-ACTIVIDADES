@@ -2381,6 +2381,15 @@ function toggleFechaFin(id) {
   row.style.display = sel.value === 'operativo' ? 'none' : 'block';
 }
 
+// ── Recargar caché de disponibilidades desde Supabase ─────
+async function recargarDisponibilidades() {
+  const { data: disps } = await supabaseClient
+    .schema('rrhh').from('disponibilidades')
+    .select('colaborador_id,tipo,fecha_inicio,fecha_fin,activo,observacion')
+    .eq('activo', true);
+  window._disponibilidadesCache = disps || [];
+}
+
 // ── Cambiar estado / disponibilidad del colaborador ───────
 async function cambiarEstadoColaborador(id) {
   const sel        = document.getElementById('estadoSelect_' + id);
@@ -2393,8 +2402,10 @@ async function cambiarEstadoColaborador(id) {
   const fi          = fechaIni?.value || new Date().toISOString().split('T')[0];
   const ff          = fechaFin?.value || null;
   const obs         = obsInput?.value || null;
+  const badgeInfo   = PYL.getDisponibilidadBadge(nuevoEstado);
 
-  const badgeInfo = PYL.getDisponibilidadBadge(nuevoEstado);
+  // Feedback visual inmediato
+  showToast('Guardando...', 'default');
 
   try {
     // 1. Desactivar disponibilidad anterior activa
@@ -2405,7 +2416,7 @@ async function cambiarEstadoColaborador(id) {
       .eq('activo', true);
     if (errUpd) throw errUpd;
 
-    // 2. Insertar nueva disponibilidad (solo si no es operativo: lo operativo es el estado base)
+    // 2. Insertar nueva (solo si no es operativo)
     if (nuevoEstado !== 'operativo') {
       const { error: errIns } = await supabaseClient
         .schema('rrhh').from('disponibilidades')
@@ -2420,31 +2431,32 @@ async function cambiarEstadoColaborador(id) {
       if (errIns) throw errIns;
     }
 
-    // 3. Actualizar caché local
-    const cache = window._disponibilidadesCache || [];
-    const sinEste = cache.filter(d => d.colaborador_id !== id || !d.activo);
-    if (nuevoEstado !== 'operativo') {
-      sinEste.push({ colaborador_id: id, tipo: nuevoEstado, fecha_inicio: fi, fecha_fin: ff, activo: true, observacion: obs });
-    }
-    window._disponibilidadesCache = sinEste;
-
-    showToast('Estado actualizado: ' + badgeInfo.label, 'success');
+    // 3. Recargar caché fresco desde Supabase y re-renderizar
+    await recargarDisponibilidades();
     closeModal();
-    // Refrescar la vista
-    setTimeout(() => navigate('personal'), 300);
+    showToast('✅ Estado actualizado: ' + badgeInfo.label, 'success');
+    await renderPersonal();
 
   } catch (e) {
     console.error('Error al cambiar estado:', e);
-    // Fallback: actualizar solo en memoria si no hay tabla en Supabase aún
+
+    // Fallback: actualizar solo en memoria
     const cache = window._disponibilidadesCache || [];
     const sinEste = cache.filter(d => !(d.colaborador_id === id && d.activo));
     if (nuevoEstado !== 'operativo') {
-      sinEste.push({ colaborador_id: id, tipo: nuevoEstado, fecha_inicio: fi, fecha_fin: ff, activo: true, observacion: obs });
+      sinEste.push({
+        colaborador_id: id,
+        tipo:           nuevoEstado,
+        fecha_inicio:   fi,
+        fecha_fin:      ff,
+        activo:         true,
+        observacion:    obs
+      });
     }
     window._disponibilidadesCache = sinEste;
-    showToast('Estado actualizado localmente: ' + badgeInfo.label, 'success');
     closeModal();
-    setTimeout(() => navigate('personal'), 300);
+    showToast('⚠️ Guardado localmente (sin conexión a BD): ' + badgeInfo.label, 'success');
+    await renderPersonal();
   }
 }
 
