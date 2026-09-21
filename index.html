@@ -2097,7 +2097,7 @@ async function cargarColaboradoresSupabase() {
     if (e1) throw e1;
     const { data: ciudades } = await supabaseClient.schema('rrhh').from('ciudades').select('id,codigo,nombre');
     const { data: cargos }   = await supabaseClient.schema('rrhh').from('cargos').select('id,nombre');
-    const { data: disps }    = await supabaseClient.schema('rrhh').from('disponibilidades').select('colaborador_id,tipo,fecha_inicio,fecha_fin,activo').eq('activo', true);
+    const { data: disps }    = await supabaseClient.schema('rrhh').from('disponibilidades').select('colaborador_id,tipo,fecha_inicio,fecha_fin,activo,observacion').eq('activo', true);
     window._disponibilidadesCache = disps || [];
     const cm = Object.fromEntries((ciudades||[]).map(c => [c.id, c]));
     const km = Object.fromEntries((cargos||[]).map(c => [c.id, c]));
@@ -2399,7 +2399,7 @@ async function cambiarEstadoColaborador(id) {
   try {
     // 1. Desactivar disponibilidad anterior activa
     const { error: errUpd } = await supabaseClient
-      .from('disponibilidades')
+      .schema('rrhh').from('disponibilidades')
       .update({ activo: false })
       .eq('colaborador_id', id)
       .eq('activo', true);
@@ -2408,7 +2408,7 @@ async function cambiarEstadoColaborador(id) {
     // 2. Insertar nueva disponibilidad (solo si no es operativo: lo operativo es el estado base)
     if (nuevoEstado !== 'operativo') {
       const { error: errIns } = await supabaseClient
-        .from('disponibilidades')
+        .schema('rrhh').from('disponibilidades')
         .insert({
           colaborador_id: id,
           tipo:           nuevoEstado,
@@ -2697,7 +2697,7 @@ async function cargarKpisSupabase() {
   try {
     const { data: colabs } = await supabaseClient.schema('rrhh').from('colaboradores').select('id,estado_laboral,activo').eq('activo', true);
     const hoy = new Date().toISOString().split('T')[0];
-    const { data: disps } = await supabaseClient.schema('rrhh').from('disponibilidades').select('colaborador_id,tipo,fecha_inicio,fecha_fin,activo').eq('activo', true);
+    const { data: disps } = await supabaseClient.schema('rrhh').from('disponibilidades').select('colaborador_id,tipo,fecha_inicio,fecha_fin,activo,observacion').eq('activo', true);
     const en30 = new Date(); en30.setDate(en30.getDate()+30);
     const { data: turnos } = await supabaseClient.schema('rrhh').from('turnos').select('id,fecha_inicio,fecha_fin').gte('fecha_inicio',hoy).lte('fecha_inicio',en30.toISOString().split('T')[0]);
     const total = (colabs||[]).length;
