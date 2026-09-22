@@ -2577,7 +2577,27 @@ async function renderPersonal() {
   const dc = window._disponibilidadesCache || [];
   const total = colaboradores.length;
   const operativos = colaboradores.filter(c => { const d=dc.find(x=>x.colaborador_id===c.id&&x.fecha_inicio<=hoy&&(!x.fecha_fin||x.fecha_fin>=hoy)&&x.activo); return !d||d.tipo==='operativo'; }).length;
-  const cards = colaboradores.map(renderPersonalCard).join('');
+  // Ordenar por estado: Operativo → Maternidad/Lactancia/Vacaciones/Medico → Inactivo
+  const _estadoPeso = (c) => {
+    const hoy = new Date().toISOString().split('T')[0];
+    const disp = (window._disponibilidadesCache||[]).find(d =>
+      d.colaborador_id === c.id && d.fecha_inicio <= hoy &&
+      (!d.fecha_fin || d.fecha_fin >= hoy) && d.activo
+    );
+    const t = disp ? disp.tipo : 'operativo';
+    if (t === 'operativo')  return 0;
+    if (['maternidad','lactancia'].includes(t)) return 1;
+    if (['vacaciones','medico'].includes(t))    return 2;
+    return 3; // detenida / inactivo
+  };
+  const colaboradoresOrdenados = [...colaboradores].sort((a, b) => {
+    const pa = _estadoPeso(a), pb = _estadoPeso(b);
+    if (pa !== pb) return pa - pb;
+    const na = ((a.apellidos||'') + ' ' + (a.nombres||'')).trim();
+    const nb = ((b.apellidos||'') + ' ' + (b.nombres||'')).trim();
+    return na.localeCompare(nb);
+  });
+  const cards = colaboradoresOrdenados.map(renderPersonalCard).join('');
   const va = App.vistaPersonal || 'tarjetas';
   const gIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>`;
   const lIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>`;
@@ -3101,7 +3121,26 @@ function renderPersonalLista(colaboradores) {
   const hoy = new Date().toISOString().split('T')[0];
   const dispsCache = window._disponibilidadesCache || [];
 
-  const filas = colaboradores.map(c => {
+  // Ordenar por estado igual que en tarjetas
+  const _ep = (c) => {
+    const hoy2 = new Date().toISOString().split('T')[0];
+    const d2 = (window._disponibilidadesCache||[]).find(d =>
+      d.colaborador_id === c.id && d.fecha_inicio <= hoy2 &&
+      (!d.fecha_fin || d.fecha_fin >= hoy2) && d.activo
+    );
+    const t2 = d2 ? d2.tipo : 'operativo';
+    if (t2 === 'operativo') return 0;
+    if (['maternidad','lactancia'].includes(t2)) return 1;
+    if (['vacaciones','medico'].includes(t2))    return 2;
+    return 3;
+  };
+  const colaboradoresLista = [...colaboradores].sort((a, b) => {
+    const diff = _ep(a) - _ep(b);
+    if (diff !== 0) return diff;
+    return (((a.apellidos||'')+' '+(a.nombres||'')).trim())
+      .localeCompare(((b.apellidos||'')+' '+(b.nombres||'')).trim());
+  });
+  const filas = colaboradoresLista.map(c => {
     const dispActiva = dispsCache.find(d =>
       d.colaborador_id === c.id &&
       d.fecha_inicio <= hoy &&
