@@ -2487,7 +2487,7 @@ async function guardarBackups(colaboradorId) {
     Object.entries(backups).forEach(function(entry) {
       const tipo = entry[0], lista = entry[1];
       lista.forEach(function(bk) {
-        filas.push({ colaborador_id: colaboradorId, backup_id: bk.id, tipo: tipo });
+        filas.push({ colaborador_id: colaboradorId, backup_id: bk.id, tipo: tipo, nivel: 1, vigente: true });
       });
     });
 
