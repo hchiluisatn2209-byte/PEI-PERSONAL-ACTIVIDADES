@@ -2533,18 +2533,11 @@ async function guardarClienteAsignado(id) {
   const cli = clisM.find(c => c.id === clienteId);
 
   try {
-    if (clienteId) {
-      const { error } = await supabaseClient
-        .schema('rrhh').from('colaboradores')
-        .update({ cliente_asignado_id: clienteId, cliente_asignado_nombre: cli?.nombre || '' })
-        .eq('id', id);
-      if (error) throw error;
-    } else {
-      await supabaseClient
-        .schema('rrhh').from('colaboradores')
-        .update({ cliente_asignado_id: null, cliente_asignado_nombre: null })
-        .eq('id', id);
-    }
+    const { error } = await supabaseClient
+      .schema('rrhh').from('colaboradores')
+      .update({ cliente_id: clienteId || null })
+      .eq('id', id);
+    if (error) throw error;
     // Actualizar caché local
     if (!window._clientesAsignados) window._clientesAsignados = {};
     window._clientesAsignados[id] = clienteId;
@@ -2592,7 +2585,8 @@ async function guardarBackups(colaboradorId) {
     }
 
     // 3. Recargar backups y re-renderizar
-    await cargarBackupsSupabase();
+    await cargarClientesSupabase();
+  await cargarBackupsSupabase();
     closeModal();
     const resumen = Object.entries(backups)
       .filter(function(e){ return e[1].length > 0; })
@@ -2607,6 +2601,30 @@ async function guardarBackups(colaboradorId) {
     // Fallback: mantener en memoria y re-renderizar igual
     closeModal();
     await renderPersonal();
+  }
+}
+
+// ── Cargar clientes desde Supabase ───────────────────────
+async function cargarClientesSupabase() {
+  try {
+    const { data, error } = await supabaseClient
+      .schema('rrhh').from('clientes')
+      .select('id, nombre, tipo, ciudad')
+      .eq('activo', true)
+      .order('nombre');
+    if (error) throw error;
+    window._clientesMaster = data || [];
+
+    // Cargar asignaciones colaborador → cliente
+    const { data: colabs } = await supabaseClient
+      .schema('rrhh').from('colaboradores')
+      .select('id, cliente_id');
+    window._clientesAsignados = {};
+    (colabs || []).forEach(c => {
+      if (c.cliente_id) window._clientesAsignados[c.id] = c.cliente_id;
+    });
+  } catch(e) {
+    console.warn('No se pudo cargar clientes desde Supabase:', e.message);
   }
 }
 
@@ -2641,6 +2659,7 @@ async function renderPersonal() {
   main.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;padding:60px;color:var(--text-muted);"><div style="text-align:center;"><div style="font-size:32px;margin-bottom:12px;">&#8635;</div><div>Cargando equipo...</div></div></div>';
   const colaboradores = await cargarColaboradoresSupabase();
   window._colaboradoresCache = colaboradores;
+  await cargarClientesSupabase();
   await cargarBackupsSupabase();
   const hoy = new Date().toISOString().split('T')[0];
   const dc = window._disponibilidadesCache || [];
