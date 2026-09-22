@@ -1262,7 +1262,7 @@ ul { list-style: none; }
 }
 .personal-list-row {
   display: grid;
-  grid-template-columns: 44px 2fr 1.2fr 1.2fr 1fr 1fr 100px;
+  grid-template-columns: 44px 2fr 1fr 1fr 1fr 1fr 1.4fr 90px;
   align-items: center;
   gap: var(--sp-4);
   padding: 10px var(--sp-5);
@@ -3120,6 +3120,18 @@ function renderPersonalLista(colaboradores) {
           ${c.gmail_empresa || '—'}
         </div>
         <div><span class="badge ${b.cls}">${b.label}</span></div>
+        <div class="personal-list-cell" style="font-size:10px;line-height:1.4;">
+          ${(function(){
+            const bks = window._backupsData && window._backupsData[c.id];
+            if (!bks) return '<span style="color:var(--text-muted)">—</span>';
+            const total = Object.values(bks).reduce((a,b)=>a+b.length,0);
+            if (total === 0) return '<span style="color:var(--text-muted)">Sin backup</span>';
+            return Object.entries(bks)
+              .filter(([,v])=>v.length>0)
+              .map(([k,v])=>`<span style="color:var(--text-muted)">${{general:'Gen',ts:'TS',clientes:'Cli',proyectos:'Proy'}[k]}:</span> `+v.map(p=>p.apellidos?.split(' ')[0]||'?').join(', '))
+              .join('<br>');
+          })()}
+        </div>
       </div>`;
   }).join('');
 
@@ -3133,6 +3145,7 @@ function renderPersonalLista(colaboradores) {
         <div>Celular</div>
         <div>Gmail</div>
         <div>Estado</div>
+        <div>Backups</div>
       </div>
       ${filas || '<div style="padding:32px;text-align:center;color:var(--text-muted);">Sin datos</div>'}
     </div>`;
