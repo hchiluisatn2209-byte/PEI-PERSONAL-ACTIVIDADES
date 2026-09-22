@@ -2130,11 +2130,9 @@ function renderPersonalCard(c) {
   const ini = c.iniciales || (c.apellidos||'').substring(0,2).toUpperCase();
   const nombre = ((c.apellidos||'')+' '+(c.nombres||'')).trim();
   const cc = PYL.getCityClass(ciudad);
-  const ciudadNom = (c.ciudad?.nombre || '').toLowerCase();
-  const ciudadCls = ciudadNom.includes('guayaquil') ? 'ciudad-gye'
-                  : ciudadNom.includes('quito')     ? 'ciudad-uio'
-                  : '';
-  return `<div class="personal-card ${ciudadCls}" onclick="verDetalleColaborador('${c.id}')">
+  const _cn = (c.ciudad?.nombre || '').toLowerCase();
+  const _cc = _cn.includes('guayaquil') ? 'ciudad-gye' : _cn.includes('quito') ? 'ciudad-uio' : '';
+  return `<div class="personal-card ${_cc}" onclick="verDetalleColaborador('${c.id}')">
     <div class="personal-card-header">
       <div class="initials-badge ${cc} sz-lg" data-tooltip="${ini}">${ini}</div>
       <div class="personal-card-info"><div class="personal-name">${nombre}</div><div class="personal-cargo">${cargoNom}</div></div>
