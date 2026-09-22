@@ -2325,6 +2325,36 @@ function verDetalleColaborador(id) {
       +'</div>'
     ))
 
+    // ── Sección Cliente Asignado ──
+    +(esCoord ? (
+      (function(){
+        const clisM = window._clientesMaster || [];
+        const cliActual = (window._clientesAsignados || {})[id] || '';
+        const opsCli = '<option value="">— Sin asignación —</option>'
+          + clisM.map(cl =>
+              `<option value="${cl.id}" ${cl.id===cliActual?'selected':''}>${cl.nombre}</option>`
+            ).join('');
+        return '<div style="background:var(--bg-row-alt);border-radius:8px;padding:14px;margin-bottom:16px;border:1px solid var(--border);">'
+          +'<div style="font-size:13px;font-weight:700;margin-bottom:10px;">🏢 Cliente Nacional Asignado</div>'
+          +'<select id="clienteSelect_'+id+'" class="form-select" style="width:100%;border:1px solid var(--border);border-radius:var(--r-md);padding:6px 10px;">'
+          +opsCli
+          +'</select>'
+          +'</div>';
+      })()
+    ) : (
+      (function(){
+        const cliActual = (window._clientesAsignados || {})[id];
+        const clisM = window._clientesMaster || [];
+        const cli = clisM.find(c => c.id === cliActual);
+        return cli
+          ? '<div style="background:var(--bg-row-alt);border-radius:8px;padding:12px 14px;margin-bottom:16px;">'
+            +'<span style="font-size:12px;color:var(--text-muted);">Cliente asignado: </span>'
+            +'<span style="font-size:13px;font-weight:600;">'+cli.nombre+'</span>'
+            +'</div>'
+          : '';
+      })()
+    ))
+
     // ── Sección Backups ──
     +'<div style="font-size:13px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px;">'
     +'<span>🔄 Gestión de Backups</span>'
@@ -2335,9 +2365,10 @@ function verDetalleColaborador(id) {
   // Footer
   document.querySelector('.modal-footer').innerHTML = esCoord
     ? '<button class="btn btn-secondary" onclick="closeModal()">Cerrar</button>'
-      +'<div style="display:flex;gap:8px;">'
-      +'<button class="btn btn-secondary" style="border-color:var(--state-det);color:var(--state-det);" onclick="cambiarEstadoColaborador(\''+id+'\')">💾 Guardar estado</button>'
-      +'<button class="btn btn-primary" onclick="guardarBackups(\''+id+'\')">💾 Guardar backups</button>'
+      +'<div style="display:flex;gap:8px;flex-wrap:wrap;">'
+      +'<button class="btn btn-secondary" style="border-color:#0891b2;color:#0891b2;" onclick="guardarClienteAsignado(\''+id+'\')">🏢 Cliente</button>'
+      +'<button class="btn btn-secondary" style="border-color:var(--state-det);color:var(--state-det);" onclick="cambiarEstadoColaborador(\''+id+'\')">💾 Estado</button>'
+      +'<button class="btn btn-primary" onclick="guardarBackups(\''+id+'\')">💾 Backups</button>'
       +'</div>'
     : '<button class="btn btn-primary" onclick="closeModal()">Cerrar</button>';
 
@@ -2489,6 +2520,43 @@ async function cambiarEstadoColaborador(id) {
     window._disponibilidadesCache = sinEste;
     closeModal();
     showToast('⚠️ Guardado localmente: ' + badgeInfo.label, 'success');
+    await renderPersonal();
+  }
+}
+
+// ── Guardar cliente asignado ─────────────────────────────
+async function guardarClienteAsignado(id) {
+  const sel = document.getElementById('clienteSelect_' + id);
+  if (!sel) return;
+  const clienteId = sel.value;
+  const clisM = window._clientesMaster || [];
+  const cli = clisM.find(c => c.id === clienteId);
+
+  try {
+    if (clienteId) {
+      const { error } = await supabaseClient
+        .schema('rrhh').from('colaboradores')
+        .update({ cliente_asignado_id: clienteId, cliente_asignado_nombre: cli?.nombre || '' })
+        .eq('id', id);
+      if (error) throw error;
+    } else {
+      await supabaseClient
+        .schema('rrhh').from('colaboradores')
+        .update({ cliente_asignado_id: null, cliente_asignado_nombre: null })
+        .eq('id', id);
+    }
+    // Actualizar caché local
+    if (!window._clientesAsignados) window._clientesAsignados = {};
+    window._clientesAsignados[id] = clienteId;
+    showToast('🏢 Cliente asignado: ' + (cli?.nombre || 'Sin asignación'), 'success');
+    closeModal();
+    await renderPersonal();
+  } catch(e) {
+    // Fallback en memoria
+    if (!window._clientesAsignados) window._clientesAsignados = {};
+    window._clientesAsignados[id] = clienteId;
+    showToast('🏢 Guardado localmente: ' + (cli?.nombre || 'Sin asignación'), 'success');
+    closeModal();
     await renderPersonal();
   }
 }
@@ -3638,22 +3706,25 @@ function guardarNuevoTurno() {
 }
 
 function renderClientes() {
-  const clientes = [
-    { nombre:'BANCO PICHINCHA C.A.',           tipo:'banca_tamp',  gestor:'RA', ciudad:'GYE', estado:'activo' },
-    { nombre:'COOPERATIVA JEP',                tipo:'banca_tamp',  gestor:'CA', ciudad:'UIO', estado:'activo' },
-    { nombre:'BANCO DE LA PRODUCCION PRODUBANCO',tipo:'banca_tamp',gestor:'AG', ciudad:'UIO', estado:'activo' },
-    { nombre:'GRUPO KFC',                       tipo:'nacional',    gestor:'KH', ciudad:'GYE', estado:'activo' },
-    { nombre:'GRUPO DIFARE',                    tipo:'nacional',    gestor:'CV', ciudad:'GYE', estado:'activo' },
-    { nombre:'CORPORACIÓN GPF (FYBECA)',        tipo:'nacional',    gestor:'MC', ciudad:'GYE', estado:'activo' },
-    { nombre:'GRUPO ICESA',                     tipo:'nacional',    gestor:'MOV',ciudad:'GYE', estado:'activo' },
-    { nombre:'TUTI TTDE S.A.',                  tipo:'nacional',    gestor:'WG', ciudad:'GYE', estado:'activo' },
-    { nombre:'INTERAGUA',                       tipo:'nacional',    gestor:'MC', ciudad:'GYE', estado:'activo' },
-    { nombre:'BANCO DEL PACÍFICO',              tipo:'banca_tamp',  gestor:'SV', ciudad:'GYE', estado:'activo' },
-    { nombre:'OTECEL S.A.',                     tipo:'tercerizado',  gestor:'AO', ciudad:'UIO', estado:'activo' },
-    { nombre:'INTERTELNET / BRIGHCELL',         tipo:'tercerizado',  gestor:'BGU',ciudad:'UIO', estado:'activo' },
-    { nombre:'NEDETEL',                         tipo:'nacional',    gestor:'TU', ciudad:'UIO', estado:'activo' },
-    { nombre:'BANCO INTERNACIONAL',             tipo:'banca_tamp',  gestor:'AM', ciudad:'GYE', estado:'activo' },
-  ];
+  if (!window._clientesMaster) {
+    window._clientesMaster = [
+      { id:'cli_01', nombre:'BANCO PICHINCHA C.A.',             tipo:'banca_tamp',   ciudad:'GYE' },
+      { id:'cli_02', nombre:'COOPERATIVA JEP',                  tipo:'banca_tamp',   ciudad:'UIO' },
+      { id:'cli_03', nombre:'BANCO DE LA PRODUCCION PRODUBANCO',tipo:'banca_tamp',   ciudad:'UIO' },
+      { id:'cli_04', nombre:'GRUPO KFC',                        tipo:'nacional',     ciudad:'GYE' },
+      { id:'cli_05', nombre:'GRUPO DIFARE',                     tipo:'nacional',     ciudad:'GYE' },
+      { id:'cli_06', nombre:'CORPORACIÓN GPF (FYBECA)',         tipo:'nacional',     ciudad:'GYE' },
+      { id:'cli_07', nombre:'GRUPO ICESA',                      tipo:'nacional',     ciudad:'GYE' },
+      { id:'cli_08', nombre:'TUTI TTDE S.A.',                   tipo:'nacional',     ciudad:'GYE' },
+      { id:'cli_09', nombre:'INTERAGUA',                        tipo:'nacional',     ciudad:'GYE' },
+      { id:'cli_10', nombre:'BANCO DEL PACÍFICO',               tipo:'banca_tamp',   ciudad:'GYE' },
+      { id:'cli_11', nombre:'OTECEL S.A.',                      tipo:'tercerizado',  ciudad:'UIO' },
+      { id:'cli_12', nombre:'INTERTELNET / BRIGHCELL',          tipo:'tercerizado',  ciudad:'UIO' },
+      { id:'cli_13', nombre:'NEDETEL',                          tipo:'nacional',     ciudad:'UIO' },
+      { id:'cli_14', nombre:'BANCO INTERNACIONAL',              tipo:'banca_tamp',   ciudad:'GYE' },
+    ];
+  }
+  const clientes = window._clientesMaster;
 
   const tipoLabel = { banca_tamp:'Banca/TAMP', nacional:'Nacional', tercerizado:'Tercerizado' };
   const tipoBadge = { banca_tamp:'badge-op', nacional:'badge-neutral', tercerizado:'badge-mat' };
