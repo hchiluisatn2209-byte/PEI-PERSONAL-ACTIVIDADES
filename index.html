@@ -2276,8 +2276,12 @@ function verDetalleColaborador(id) {
   const estadoNorm = estadoActual === 'operativo' ? 'operativo' : 'inactivo';
 
   const estadosOpciones = [
-    { val:'operativo', label:'Operativo' },
-    { val:'inactivo',  label:'Inactivo'  },
+    { val:'operativo',  label:'Operativo'      },
+    { val:'maternidad', label:'Maternidad'      },
+    { val:'lactancia',  label:'Lactancia'       },
+    { val:'vacaciones', label:'Vacaciones'      },
+    { val:'medico',     label:'Permiso médico'  },
+    { val:'inactivo',   label:'Inactivo'        },
   ].map(e => `<option value="${e.val}" ${e.val===estadoNorm?'selected':''}>${e.label}</option>`).join('');
 
   document.getElementById('modalBody').innerHTML =
@@ -2305,7 +2309,7 @@ function verDetalleColaborador(id) {
       +'<div><label class="form-label">Fecha inicio</label>'
       +'<input type="date" id="estadoFechaInicio_'+id+'" class="form-input" style="width:100%;border:1px solid var(--border);border-radius:var(--r-md);padding:6px 10px;" value="'+hoyModal+'"></div>'
       +'</div>'
-      +'<div id="fechaFinRow_'+id+'" style="margin-bottom:10px;display:none;">'
+      +'<div id="fechaFinRow_'+id+'" style="margin-bottom:10px;'+(estadoNorm!=='operativo'?'':'display:none;')+'">'
       +'<label class="form-label">Fecha fin <span style="color:var(--text-muted);font-weight:400;">(opcional — dejar vacío si es indefinido)</span></label>'
       +'<input type="date" id="estadoFechaFin_'+id+'" class="form-input" style="width:100%;border:1px solid var(--border);border-radius:var(--r-md);padding:6px 10px;" value="'+(dispActual?.fecha_fin||'')+'">'
       +'</div>'
@@ -2390,7 +2394,11 @@ function quitarBackup(colaboradorId, tipo, idx) {
 
 // ── Toggle fecha fin según estado seleccionado ────────────
 function toggleFechaFin(id) {
-  // Solo Operativo / Inactivo — sin necesidad de mostrar fecha fin
+  const sel4 = document.getElementById('estadoSelect_' + id);
+  const row4 = document.getElementById('fechaFinRow_' + id);
+  if (!sel4 || !row4) return;
+  const sinFin = ['operativo'];
+  row4.style.display = sinFin.includes(sel4.value) ? 'none' : 'block';
 }
 
 // ── Recargar caché de disponibilidades desde Supabase ─────
@@ -2436,7 +2444,9 @@ async function cambiarEstadoColaborador(id) {
         .schema('rrhh').from('disponibilidades')
         .insert({
           colaborador_id: id,
-          tipo:           nuevoEstado === 'inactivo' ? 'detenida' : nuevoEstado,
+          tipo:           nuevoEstado === 'inactivo'  ? 'detenida'
+                          : nuevoEstado === 'medico'    ? 'medico'
+                          : nuevoEstado,
           fecha_inicio:   fi,
           fecha_fin:      ff || null,
           descripcion:    obs || null,
@@ -2466,7 +2476,9 @@ async function cambiarEstadoColaborador(id) {
     if (nuevoEstado !== 'operativo') {
       sinEste.push({
         colaborador_id: id,
-        tipo:           nuevoEstado === 'inactivo' ? 'detenida' : nuevoEstado,
+        tipo:           nuevoEstado === 'inactivo'  ? 'detenida'
+                        : nuevoEstado === 'medico'    ? 'medico'
+                        : nuevoEstado,
         fecha_inicio:   fi,
         fecha_fin:      ff,
         activo:         true,
