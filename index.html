@@ -2164,8 +2164,8 @@ function renderBackupsCard(colaboradorId) {
   const total = Object.values(backups).reduce(function(a,b){ return a+b.length; }, 0);
   if (total === 0) return '<div style="font-size:10px;color:var(--text-muted);font-style:italic;">Sin backups asignados</div>';
 
-  const iconos = { general:'👤', ts:'📍', clientes:'🏢', proyectos:'📋' };
-  const labels = { general:'General', ts:'TS', clientes:'Clientes', proyectos:'Proyectos' };
+  const iconos = { general:'👤', ts:'📍', clientes:'🏢', proyectos:'📋', equipo:'👥' };
+  const labels = { general:'General', ts:'TS', clientes:'Clientes', proyectos:'Proyectos', equipo:'Equipo' };
   let html = '<div style="border-top:1px solid var(--border);padding-top:6px;">';
   html += '<div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;">Backups asignados</div>';
 
@@ -2202,13 +2202,14 @@ function verDetalleColaborador(id) {
 
   const nombre = ((c.apellidos||'')+' '+(c.nombres||'')).trim();
   const esCoord = (window.CURRENT_USER?.role === 'coordinador' || window.CURRENT_USER?.role === 'admin');
-  const backups = window._backupsData[id] || { general:[], ts:[], clientes:[], proyectos:[] };
+  const backups = window._backupsData[id] || { general:[], ts:[], clientes:[], proyectos:[], equipo:[] };
 
   const actividadesMap = {
-    general:   { label:'General', icon:'👤', color:'var(--accent)' },
-    ts:        { label:'TS / Técnica Sucursal', icon:'📍', color:'var(--state-op)' },
-    clientes:  { label:'Clientes Nacionales', icon:'🏢', color:'#7C3AED' },
-    proyectos: { label:'Proyectos / CRM', icon:'📋', color:'var(--state-mat)' },
+    general:   { label:'General',              icon:'👤', color:'var(--accent)'    },
+    ts:        { label:'TS / Técnica Sucursal',icon:'📍', color:'var(--state-op)' },
+    clientes:  { label:'Clientes Nacionales',  icon:'🏢', color:'#7C3AED'         },
+    proyectos: { label:'Proyectos',            icon:'📋', color:'var(--state-mat)' },
+    equipo:    { label:'Gestión Equipo',       icon:'👥', color:'#0891b2'          },
   };
 
   function renderBackupGrupo(tipo) {
@@ -2350,7 +2351,7 @@ function agregarBackup(colaboradorId, tipo) {
   const colab   = (window._colaboradoresCache||[]).find(x => x.id === colabId);
   if (!colab) return;
   if (!window._backupsData[colaboradorId]) {
-    window._backupsData[colaboradorId] = { general:[], ts:[], clientes:[], proyectos:[] };
+    window._backupsData[colaboradorId] = { general:[], ts:[], clientes:[], proyectos:[], equipo:[] };
   }
   const lista = window._backupsData[colaboradorId][tipo];
   if (lista.some(x => x.id === colabId)) { showToast('Ya está en la lista', 'error'); return; }
@@ -2527,7 +2528,7 @@ async function guardarBackups(colaboradorId) {
     closeModal();
     const resumen = Object.entries(backups)
       .filter(function(e){ return e[1].length > 0; })
-      .map(function(e){ return e[1].length + ' en ' + {general:'General',ts:'TS',clientes:'Clientes',proyectos:'Proyectos'}[e[0]]; })
+      .map(function(e){ return e[1].length + ' en ' + {general:'General',ts:'TS',clientes:'Clientes',proyectos:'Proyectos',equipo:'Equipo'}[e[0]]; })
       .join(', ');
     showToast('✅ Backups guardados: ' + (resumen || 'ninguno'), 'success');
     await renderPersonal();
@@ -2554,7 +2555,7 @@ async function cargarBackupsSupabase() {
     const colabs = window._colaboradoresCache || [];
     (data || []).forEach(function(row) {
       if (!window._backupsData[row.colaborador_id]) {
-        window._backupsData[row.colaborador_id] = { general:[], ts:[], clientes:[], proyectos:[] };
+        window._backupsData[row.colaborador_id] = { general:[], ts:[], clientes:[], proyectos:[], equipo:[] };
       }
       const bkColab = colabs.find(c => c.id === row.backup_id);
       if (bkColab) {
