@@ -820,6 +820,16 @@ ul { list-style: none; }
   box-shadow: var(--shadow-md);
   transform: translateY(-2px);
 }
+/* Ciudad Guayaquil → borde verde suave */
+.personal-card.ciudad-gye {
+  border-left: 4px solid #22c55e;
+  background: linear-gradient(135deg, #f0fdf4 0%, var(--bg-card) 60%);
+}
+/* Ciudad Quito → borde celeste suave */
+.personal-card.ciudad-uio {
+  border-left: 4px solid #38bdf8;
+  background: linear-gradient(135deg, #f0f9ff 0%, var(--bg-card) 60%);
+}
 .personal-card-header {
   display: flex;
   align-items: flex-start;
@@ -2120,7 +2130,11 @@ function renderPersonalCard(c) {
   const ini = c.iniciales || (c.apellidos||'').substring(0,2).toUpperCase();
   const nombre = ((c.apellidos||'')+' '+(c.nombres||'')).trim();
   const cc = PYL.getCityClass(ciudad);
-  return `<div class="personal-card" onclick="verDetalleColaborador('${c.id}')">
+  const ciudadNom = (c.ciudad?.nombre || '').toLowerCase();
+  const ciudadCls = ciudadNom.includes('guayaquil') ? 'ciudad-gye'
+                  : ciudadNom.includes('quito')     ? 'ciudad-uio'
+                  : '';
+  return `<div class="personal-card ${ciudadCls}" onclick="verDetalleColaborador('${c.id}')">
     <div class="personal-card-header">
       <div class="initials-badge ${cc} sz-lg" data-tooltip="${ini}">${ini}</div>
       <div class="personal-card-info"><div class="personal-name">${nombre}</div><div class="personal-cargo">${cargoNom}</div></div>
